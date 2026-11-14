@@ -1,0 +1,178 @@
+.ff-star {
+  --mag: 1;
+  --tint: var(--flame-blue);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4) var(--space-1) var(--space-1);
+  border: 0;
+  background: none;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ff-star__body {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  transition: transform var(--dur-instant) var(--ease-out);
+}
+.ff-star:active .ff-star__body {
+  transform: scale(0.92);
+}
+.ff-star__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--tint) 0%, transparent 68%);
+  opacity: 0.28;
+  animation: ff-twinkle 4.2s ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+}
+.ff-star__core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(9px * var(--mag));
+  height: calc(9px * var(--mag));
+  margin: calc(-4.5px * var(--mag)) 0 0 calc(-4.5px * var(--mag));
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: var(--glow-star);
+}
+.ff-star__core::before,
+.ff-star__core::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: calc(34px * var(--mag));
+  margin: calc(-17px * var(--mag)) 0 0 -0.5px;
+  background: linear-gradient(transparent, var(--ink), transparent);
+  opacity: 0.55;
+}
+.ff-star__core::after {
+  transform: rotate(90deg);
+}
+.ff-star__ring {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 1px solid var(--ink);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.ff-star__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ff-star__name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.ff-star__des {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.ff-star__gr {
+  text-transform: none;
+}
+.ff-star--warm {
+  --tint: var(--ember);
+}
+.ff-star--warm .ff-star__core {
+  background: var(--soot);
+  box-shadow: var(--glow-star-warm);
+}
+.ff-star--warm .ff-star__core::before,
+.ff-star--warm .ff-star__core::after {
+  background: linear-gradient(transparent, var(--soot), transparent);
+}
+.ff-star--left {
+  flex-direction: row-reverse;
+  text-align: right;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+}
+.ff-star--stack {
+  flex-direction: column;
+  text-align: center;
+  gap: 0;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+}
+.ff-star--stack .ff-star__text {
+  align-items: center;
+}
+.ff-star:focus-visible .ff-star__ring,
+.ff-star[data-hover] .ff-star__ring {
+  opacity: 0.75;
+  transform: scale(1);
+}
+.ff-star:focus-visible .ff-star__halo,
+.ff-star[data-hover] .ff-star__halo {
+  opacity: 0.6;
+  animation-play-state: paused;
+}
+@media (hover: hover) {
+  .ff-star:hover .ff-star__ring {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  .ff-star:hover .ff-star__halo {
+    opacity: 0.6;
+    animation-play-state: paused;
+  }
+  .ff-star:hover .ff-star__des {
+    color: var(--ink);
+  }
+}
+.ff-star--plain {
+  cursor: default;
+  pointer-events: none;
+}
+.ff-star--plain .ff-star__body {
+  width: 28px;
+  height: 28px;
+}
+.ff-star--plain .ff-star__name {
+  font-size: 16px;
+  color: var(--ink-muted);
+}
+@keyframes ff-twinkle {
+  from {
+    opacity: 0.16;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 0.38;
+    transform: scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ff-star__halo {
+    animation: none;
+  }
+  .ff-star__ring {
+    transition: opacity var(--dur-fast) var(--ease-out);
+    transform: none;
+  }
+}

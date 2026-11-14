@@ -1,0 +1,65 @@
+.ff-readout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 168px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--sky-800);
+  border: 1px solid var(--sky-600);
+}
+.ff-readout__value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.ff-readout__unit {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: var(--ink-faint);
+}
+.ff-readout__note {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+.ff-readout--text .ff-readout__value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.ff-readout--gap {
+  border-style: dashed;
+  border-color: var(--line-strong);
+}
+.ff-readout--alert .ff-readout__value {
+  color: var(--hazard);
+}
+.ff-readout__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.ff-readout__flag svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+.ff-readout--alert .ff-readout__flag {
+  color: var(--hazard);
+}

@@ -1,0 +1,83 @@
+.ff-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--sky-600);
+  background: var(--sky-800);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ff-tag__glyph {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: currentColor;
+}
+.ff-tag__glyph--solid {
+  border-radius: 1px;
+}
+.ff-tag__glyph--liquid {
+  border-radius: 50%;
+}
+.ff-tag__glyph--gas {
+  background: transparent;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+.ff-tag--accent {
+  background: var(--flame-blue-dim);
+  border-color: var(--flame-blue-dim);
+  color: var(--flame-blue);
+}
+.ff-tag--ember {
+  border-color: var(--ember);
+  color: var(--ember);
+}
+.ff-tag--nominal {
+  border-color: var(--nominal);
+  color: var(--nominal);
+}
+.ff-tag--hazard {
+  border-color: var(--hazard);
+  color: var(--hazard);
+}
+.ff-tag--gap {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  color: var(--ink-muted);
+}
+button.ff-tag {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--dur-instant) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+button.ff-tag:active {
+  transform: scale(0.97);
+}
+button.ff-tag[aria-pressed="true"] {
+  background: var(--flame-blue-dim);
+  border-color: var(--flame-blue);
+  color: var(--ink);
+}
+@media (hover: hover) {
+  button.ff-tag:hover {
+    border-color: var(--line-strong);
+    color: var(--ink);
+  }
+  button.ff-tag[aria-pressed="true"]:hover {
+    border-color: var(--flame-blue);
+  }
+}

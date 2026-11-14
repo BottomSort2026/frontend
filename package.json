@@ -1,0 +1,39 @@
+{
+  "name": "flame-in-freefall-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
+    "check": "vp check",
+    "test": "vp test run",
+    "fmt": "vp fmt"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-router": "^1",
+    "animejs": "^4",
+    "boopface": "0.8.0",
+    "motion": "^14",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@tanstack/router-plugin": "^1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6",
+    "typescript": "~7.0.2",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.18.0",
+      "onFail": "download"
+    }
+  }
+}

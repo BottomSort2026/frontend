@@ -20,3 +20,5 @@ claude "$(cat docs/prompts/00-bootstrap.md)"
 00, 05, 06 and 07 can run today on sample data. 02, 03 and 04 are written so that the session first compares the live service with `src/api/types.ts` and reports differences before changing code.
 
 Every prompt assumes the rules in `CLAUDE.md` (no git, stay in `frontend/`, tokens only) and `DESIGN.md`.
+
+One-off tools run through `pnpm dlx`, never `npx`: `package.json` requires pnpm, so npm refuses to run `npx` in this folder. For the agent skills that means `pnpm dlx skills@latest add <source> [--skill <name>]`.

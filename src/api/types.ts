@@ -67,13 +67,21 @@ export interface PredictResponse {
   [output: string]: unknown;
 }
 
-/** Proposal. Mirrors the corpus chunk metadata: cite the document and page, link the PSI investigation page. */
+/**
+ * Proposal for /chat. Field names follow the corpus chunk metadata (ARCHITECTURE.md §6), so the
+ * agent can pass them through; formatted as decided in §5, decision 6 (see assistant/citation.ts).
+ */
 export interface Citation {
-  title: string;
+  doc_title: string;
+  /** As written in the source, e.g. "TJ Shah, FJ Miller, S Olson, I Wichman". */
+  doc_authors?: string | null;
+  year?: number | null;
   page?: number | null;
   acronym?: string | null;
   accession?: string | null;
-  /** PSI investigation page. Never a pre-signed file URL: those expire. */
+  /** PSI folder the document sits in, e.g. "Raw Data". */
+  psi_folder?: string | null;
+  /** PSI investigation page. Always set for PSI documents. Never a pre-signed file URL: those expire. */
   investigation_url?: string | null;
   /** Public NASA URL, for non-PSI resources only. */
   public_url?: string | null;

@@ -21,9 +21,20 @@ export default defineConfig(({ mode }) => {
         ? Object.fromEntries(GATEWAY_PATHS.map((p) => [p, { target: gateway, changeOrigin: true }]))
         : undefined,
     },
-    fmt: { ignorePatterns: ["src/routeTree.gen.ts", "pnpm-lock.yaml"] },
+    // .agents and .claude hold third-party agent skills (skills-lock.json): not project code.
+    // docs/ARCHITECTURE.md is the team's shared document: keep it byte-identical to theirs.
+    fmt: {
+      ignorePatterns: [
+        "src/routeTree.gen.ts",
+        "pnpm-lock.yaml",
+        "dist",
+        ".agents",
+        ".claude",
+        "docs/ARCHITECTURE.md",
+      ],
+    },
     lint: {
-      ignorePatterns: ["src/routeTree.gen.ts", "dist"],
+      ignorePatterns: ["src/routeTree.gen.ts", "dist", ".agents", ".claude"],
       jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
       rules: { "vite-plus/prefer-vite-plus-imports": "error" },
       options: { typeAware: true, typeCheck: true },

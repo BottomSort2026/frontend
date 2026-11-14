@@ -1,6 +1,6 @@
 # Frontend: working rules
 
-The project context is in the repository root (`ARCHITECTURE.md`, root `CLAUDE.md`). This file adds what is specific to `frontend/`. Read `README.md` for the layout and `DESIGN.md` before touching anything visual.
+The project context is in `docs/ARCHITECTURE.md` and the project-wide rules in `docs/CLAUDE.md`. This file adds what is specific to `frontend/`. Read `README.md` for the layout and `DESIGN.md` before touching anything visual.
 
 ## Commands
 
@@ -18,7 +18,7 @@ Import from `vite-plus` and `vite-plus/test`, not from `vite` or `vitest` (a lin
 ## Rules
 
 - **Git is the developer's.** Do not commit, push, create branches or open pull requests. Leave the changes in the working tree and say what changed.
-- **Stay in `frontend/`.** If a task needs a change in `gateway/`, `compose.yaml` or `shared/`, stop and say which change and why.
+- **Stay in `frontend/`.** Every other service is its own repository: the gateway is `api-gateway/` (NestJS), and the MCP, ML and data services live in theirs. There is no `shared/` folder. If a task needs a change in any of them, or in a root `compose.yaml`, stop and say which change and why.
 - **The contract lives in `src/api/types.ts`.** It follows `ARCHITECTURE.md` §5 and §6. Items that document marks OPEN (prediction target, `profiles.json` hosting) and the `/chat` schema it does not define are not to be assumed: keep the code tolerant of missing fields, and change `types.ts` and `mock.ts` together when the team decides.
 - **Only `src/api/client.ts` calls `fetch`.** Components read data through the query definitions in `src/api/queries.ts`. API paths are relative; the base comes from `VITE_API_URL`.
 - **No hand-written design values.** Colours, spacing, radii, durations and easings come from the tokens: `var(--token)` in CSS, `src/lib/tokens.ts` and `src/lib/motion.ts` in TypeScript. `src/styles/tokens.css` is generated; change `design/tokens.json` and regenerate, never edit the CSS.

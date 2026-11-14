@@ -26,14 +26,24 @@ pnpm build        # production build in dist/
 
 Use pnpm, not npm: npm 10 fails to install Vite+.
 
-Against the real services, copy `.env.example` to `.env.local` and set:
+Against the real services, point the app at the gateway (the `api-gateway` repository). It listens on port 3000 when run locally with `pnpm start:dev`, and on 8080 when the Compose stack publishes it. Copy `.env.example` to `.env.local` and set one of these:
+
+**Through the dev proxy (recommended, same origin):**
 
 ```bash
 VITE_API_URL=/
-GATEWAY_URL=http://localhost:8080   # wherever the gateway listens
+GATEWAY_URL=http://localhost:3000   # 8080 under Compose
 ```
 
-The dev server then forwards `/profiles`, `/chat` and `/ml` to the gateway, so the browser stays same-origin as it is in production.
+The dev server forwards `/profiles`, `/chat` and `/ml` to the gateway, so the browser stays same-origin as it is in production.
+
+**Direct (cross-origin):**
+
+```bash
+VITE_API_URL=http://localhost:3000
+```
+
+The browser calls the gateway from `localhost:5173`, so the gateway must allow that origin through CORS. Its default allows any `http://localhost:<port>`.
 
 ## Stack
 

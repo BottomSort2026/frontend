@@ -24,3 +24,16 @@ Fetch the real `GET /profiles` (ask for the URL if `GATEWAY_URL` is not set). Co
 ## Done when
 
 `pnpm check` and `pnpm test` pass; a unit test covers parsing the `compare` search param and ranking with missing relevance values; you have looked at the detail and compare pages at 1280 px and 390 px.
+
+## Addendum
+- `ApiError` must keep the gateway's `{ error, detail }` body. When `GET /profiles` answers
+  404 `profiles_not_built`, the Library shows its own state inside the normal section shell
+  ("The investigation profiles have not been built yet"), with "Back to sky" still working.
+  Any other failure shows the generic error state. Use the route's `errorComponent`; the
+  detail and compare pages share it.
+- Never fall back to sample data when a backend is configured. Sample data appears only when
+  `VITE_API_URL` is empty.
+- The sample profiles are too thin to exercise a detail page. Extend them in `mock.ts` only
+  with values that `docs/ARCHITECTURE.md` states: the FLEX table in §4 and the illustrative
+  BASS-II profile in §6. Leave the other profiles sparse on purpose, so the missing-field
+  paths are visible in the same view. Do not invent values.

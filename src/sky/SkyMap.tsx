@@ -126,7 +126,8 @@ export function SkyMap() {
   // Back in the sky after a trip: return focus to the star we left from.
   const previous = useRef(phase);
   useEffect(() => {
-    if (previous.current === "out" && phase === "sky" && current)
+    // Not just "out" → "sky": with reduced motion "out" and "sky" land in the same render.
+    if (previous.current !== "sky" && phase === "sky" && current)
       starEls.current[current.id]?.focus({ preventScroll: true });
     previous.current = phase;
   }, [phase, current]);

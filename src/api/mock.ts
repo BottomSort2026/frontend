@@ -4,6 +4,7 @@
 
 import {
   investigationUrl,
+  type Citation,
   type ChatReply,
   type ChatRequest,
   type ModelInfo,
@@ -137,13 +138,17 @@ function samplePrediction(req: PredictRequest): PredictResponse {
   };
 }
 
-const MINI_BOOK = {
-  title: "Combustion in Reduced Gravity (A Researcher's Guide to Combustion Science)",
+// Title and authors as ARCHITECTURE.md §6 gives them; the year is the one in its NASA number,
+// NP-2015-10-034-JSC. No page: sample answers do not point at a real page.
+const MINI_BOOK: Citation = {
+  doc_title: "Combustion in Reduced Gravity",
+  doc_authors: "Gokoglu, Dietrich, Stocker, Ferkul, Olson and Hicks",
+  year: 2015,
   acronym: "NASA mini-book",
   public_url: "https://www.nasa.gov/missions/station/a-researchers-guide-to-combustion-science/",
 };
-const cite = (acronym: string, accession: string, title: string) => ({
-  title,
+const cite = (acronym: string, accession: string, doc_title: string): Citation => ({
+  doc_title,
   acronym,
   accession,
   investigation_url: investigationUrl(accession),

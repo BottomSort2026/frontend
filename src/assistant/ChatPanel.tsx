@@ -3,6 +3,7 @@ import type { Citation } from "../api/types";
 import { Button } from "../ui/Button";
 import { ArrowUp, Close } from "../ui/icons";
 import { AssistantFace, type FaceCue } from "./AssistantFace";
+import { citationHref, formatCitation } from "./citation";
 import type { AssistantStatus, ChatMessage } from "./useChat";
 
 interface ChatPanelProps {
@@ -18,26 +19,46 @@ interface ChatPanelProps {
   onTyping: () => void;
 }
 
-/** A source under an answer: the document and page, linked to the PSI investigation page (never a file URL). */
-function CitationPill({ citation: c }: { citation: Citation }) {
-  const href = c.investigation_url ?? c.public_url ?? undefined;
-  const name = c.acronym ?? c.accession ?? c.title;
-  const detail = [c.accession && c.acronym ? c.accession : null, c.page ? `p. ${c.page}` : null]
-    .filter(Boolean)
-    .join(" · ");
-  const body = (
+/**
+ * A source under an answer, on one row: the pill (acronym or accession, then the page) and the
+ * document title and year. The whole row links to the PSI investigation page (never a file URL).
+ */
+function CitationRow({ citation: c }: { citation: Citation }) {
+  const href = citationHref(c);
+  const label = formatCitation(c);
+  const name = c.acronym || c.accession;
+  const page = c.page != null ? `p. ${c.page}` : null;
+  const visible = (
     <>
-      <b>{name}</b>
-      {detail}
+      {name || page ? (
+        <span className="ff-src">
+          {name ? <b>{name}</b> : null}
+          {page}
+        </span>
+      ) : null}
+      <span className="ff-cite__doc">
+        {c.doc_title}
+        {c.year != null ? ` (${c.year})` : null}
+      </span>
     </>
   );
   return href ? (
-    <a className="ff-src" href={href} target="_blank" rel="noreferrer" title={c.title}>
-      {body}
+    <a
+      className="ff-cite ff-cite--link"
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={label}
+      title={label}
+    >
+      {visible}
     </a>
   ) : (
-    <span className="ff-src" title={c.title}>
-      {body}
+    <span className="ff-cite" title={label}>
+      <span aria-hidden="true" className="ff-cite__visible">
+        {visible}
+      </span>
+      <span className="ff-cite__sr">{label}</span>
     </span>
   );
 }
@@ -119,7 +140,7 @@ export function ChatPanel({
             {m.citations && m.citations.length > 0 ? (
               <div className="ff-msg__src">
                 {m.citations.map((c, i) => (
-                  <CitationPill key={`${c.title}-${i}`} citation={c} />
+                  <CitationRow key={`${c.doc_title}-${i}`} citation={c} />
                 ))}
               </div>
             ) : null}

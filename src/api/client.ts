@@ -81,8 +81,9 @@ export const api = {
   /** profiles.json may be a bare array or wrapped in { profiles }: its hosting is still OPEN. */
   async profiles(signal?: AbortSignal): Promise<ProfileList> {
     if (!hasBackend) return mock.getProfiles();
-    const data = await request<InvestigationProfile[] | { profiles: InvestigationProfile[] }>(
+    const data = await requestOrMock<InvestigationProfile[] | { profiles: InvestigationProfile[] }>(
       "/profiles",
+      () => mock.getProfiles(),
       { signal },
     );
     return { profiles: Array.isArray(data) ? data : data.profiles, sample: false };

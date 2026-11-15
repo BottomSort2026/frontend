@@ -2,8 +2,8 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite-plus";
 
-/** Paths the gateway routes to the services (ARCHITECTURE.md §5). */
-const GATEWAY_PATHS = ["/profiles", "/chat", "/ml"];
+/** Paths the gateway routes to the services. `/mcp` carries the Flame Lab (docs/frontend_flame_lab.md §8). */
+const GATEWAY_PATHS = ["/profiles", "/chat", "/mcp"];
 
 export default defineConfig(({ mode }) => {
   // GATEWAY_URL is read from the environment, never hard-coded (e.g. http://localhost:8080).
@@ -22,7 +22,8 @@ export default defineConfig(({ mode }) => {
         : undefined,
     },
     // .agents and .claude hold third-party agent skills (skills-lock.json): not project code.
-    // docs/ARCHITECTURE.md is the team's shared document: keep it byte-identical to theirs.
+    // docs/ARCHITECTURE.md and the two Flame Lab documents are the team's shared documents:
+    // keep them byte-identical to theirs.
     fmt: {
       ignorePatterns: [
         "src/routeTree.gen.ts",
@@ -31,6 +32,8 @@ export default defineConfig(({ mode }) => {
         ".agents",
         ".claude",
         "docs/ARCHITECTURE.md",
+        "docs/frontend_flame_lab.md",
+        "docs/prediction_flow.md",
       ],
     },
     lint: {

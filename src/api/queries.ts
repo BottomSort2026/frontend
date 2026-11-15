@@ -1,6 +1,7 @@
-import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { api } from "./client";
-import type { PredictRequest } from "./types";
+import type { SampleFixture } from "./mock";
+import type { LabInputs } from "./types";
 
 export const profilesQuery = queryOptions({
   queryKey: ["profiles"],
@@ -9,18 +10,18 @@ export const profilesQuery = queryOptions({
 });
 
 export const modelInfoQuery = queryOptions({
-  queryKey: ["ml", "model-info"],
-  queryFn: ({ signal }) => api.modelInfo(signal),
+  queryKey: ["lab", "model-info"],
+  queryFn: ({ signal }) => api.labModelInfo(signal),
   staleTime: Infinity,
 });
 
-/** One prediction per distinct set of inputs. The previous answer stays on screen while the next loads. */
-export function predictionQuery(inputs: PredictRequest | null) {
-  return queryOptions({
-    queryKey: ["ml", "predict", inputs],
-    queryFn: ({ signal }) => api.predict(inputs!, signal),
-    enabled: inputs !== null,
-    placeholderData: keepPreviousData,
-    staleTime: Infinity,
+/**
+ * One prediction per press of Predict, never on input change: each one costs an LLM call.
+ * `fixture` selects a sample state (`?sample=` on /flame-lab) and only matters without a backend.
+ */
+export function predictMutation(fixture?: SampleFixture) {
+  return mutationOptions({
+    mutationKey: ["lab", "predict"],
+    mutationFn: (inputs: LabInputs) => api.labPredict(inputs, fixture),
   });
 }

@@ -20,16 +20,35 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+.ff-predict__action {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.ff-predict__action .ff-btn {
+  min-width: 160px;
+}
+.ff-predict__invalid {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--hazard);
+}
+.ff-predict__invalid svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: calc(var(--space-1) / 2);
+}
 .ff-predict__out {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   min-width: 0;
-}
-.ff-predict__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
-  gap: var(--space-4);
 }
 .ff-predict__flags {
   display: flex;
@@ -42,44 +61,6 @@
   line-height: 20px;
   color: var(--ink-faint);
 }
-.ff-probs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--sky-800);
-  border: 1px solid var(--sky-600);
-}
-.ff-probs__row {
-  display: grid;
-  grid-template-columns: minmax(88px, auto) 1fr 48px;
-  align-items: center;
-  gap: var(--space-3);
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--ink-muted);
-}
-.ff-probs__row b {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-  text-align: right;
-}
-.ff-probs__bar {
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--sky-700);
-  overflow: hidden;
-}
-.ff-probs__bar i {
-  display: block;
-  height: 100%;
-  width: calc(var(--v) * 100%);
-  border-radius: var(--radius-pill);
-  background: var(--flame-blue);
-}
 .ff-predict__empty {
   padding: var(--space-6);
   border-radius: var(--radius-md);
@@ -88,11 +69,214 @@
   font-size: 14px;
   line-height: 22px;
 }
+.ff-predict__down {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--hazard);
+}
 @media (max-width: 719px) {
   .ff-predict {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.ff-predict__grid .ff-probs {
-  grid-column: 1/-1;
+
+/* Results */
+.ff-lab-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.ff-lab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--sky-800);
+  border: 1px solid var(--sky-600);
+}
+/* Inputs edited after the result: the panels say so by their border, the text stays readable. */
+.ff-lab-result--stale .ff-lab-panel {
+  border-style: dashed;
+  border-color: var(--line-strong);
+}
+.ff-lab-verdict-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ff-lab-verdict {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.ff-lab-result__line {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ink-muted);
+}
+
+/* Outcome: one grid for both rows so the bars line up. */
+.ff-meters {
+  display: grid;
+  grid-template-columns: auto minmax(48px, 1fr) 48px;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ff-meter {
+  display: contents;
+  color: var(--ink-muted);
+}
+.ff-meter[data-predicted="true"] {
+  color: var(--ink);
+}
+.ff-meter b {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ff-meter__bar {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--sky-700);
+  overflow: hidden;
+}
+.ff-meter__bar i {
+  display: block;
+  height: 100%;
+  width: calc(var(--v) * 100%);
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+}
+.ff-meter[data-predicted="true"] .ff-meter__bar i {
+  background: var(--flame-blue);
+}
+
+/* Support (k-NN) */
+.ff-support {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--sky-600);
+}
+.ff-support__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.ff-support__n {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+
+/* Droplet at extinction: the fuel droplet, not the flame. No glow, no fire colour, no motion. */
+.ff-droplet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6);
+}
+.ff-droplet__svg {
+  width: 160px;
+  flex: none;
+}
+.ff-droplet__d0 {
+  fill: none;
+  stroke: var(--ink-muted);
+  stroke-width: 1.5;
+}
+.ff-droplet__dext {
+  fill: var(--sky-700);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.ff-droplet__scale {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: 1.5;
+}
+.ff-droplet__label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  fill: var(--ink-faint);
+}
+.ff-droplet__readouts {
+  flex: 1 1 200px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: var(--space-4);
+}
+.ff-droplet__readouts .ff-readout {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+/* Closest real tests */
+.ff-nearest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ff-nearest li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--sky-600);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ff-nearest li:last-child {
+  border-bottom: 0;
+}
+.ff-nearest__id,
+.ff-nearest__cir {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.ff-nearest__id {
+  color: var(--ink);
+}
+.ff-nearest__cir {
+  color: var(--ink-faint);
+}
+.ff-nearest__end {
+  margin-left: auto;
+  color: var(--ink-muted);
+}
+.ff-lab-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-1);
+  min-height: 40px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--flame-blue);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.ff-lab-link svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+@media (hover: hover) {
+  .ff-lab-link:hover {
+    text-decoration: underline;
+  }
 }

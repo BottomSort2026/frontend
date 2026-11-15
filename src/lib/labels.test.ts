@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { formatNumber, humanize } from "./labels";
+import { choiceLabel, formatNumber, humanize, testEndLabel } from "./labels";
 
 describe("field labels", () => {
   it("splits the unit off a field name", () => {
@@ -26,5 +26,21 @@ describe("field labels", () => {
     expect(formatNumber(3)).toBe("3");
     expect(formatNumber(1234.5)).toBe("1235");
     expect(formatNumber(0)).toBe("0");
+  });
+
+  it("names the Lab's inputs and choices", () => {
+    expect(humanize("suppressant_fraction")).toEqual({ label: "Amount" });
+    expect(choiceLabel("none")).toBe("None");
+    expect(choiceLabel("co2")).toBe("CO₂");
+    expect(choiceLabel("he")).toBe("Helium");
+    expect(choiceLabel("methanol")).toBe("Methanol");
+  });
+
+  it("says how a real test ended", () => {
+    expect(testEndLabel("extinction")).toBe("went out");
+    expect(testEndLabel("completion")).toBe("burned out");
+    expect(testEndLabel("disruption")).toBe("broke apart");
+    expect(testEndLabel(null)).toBe("end not recorded");
+    expect(testEndLabel("fiber_contact")).toBe("fiber contact");
   });
 });

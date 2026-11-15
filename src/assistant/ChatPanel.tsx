@@ -17,6 +17,10 @@ interface ChatPanelProps {
   onClose: () => void;
   /** The person started typing: the face looks down at the input. */
   onTyping: () => void;
+  /** Move focus to the input on open. Only when the person opened the panel themselves. */
+  focusInput: boolean;
+  /** A message to scroll to and focus ("Read the explanation"). A new `n` asks again. */
+  revealTarget: { id: number; n: number } | null;
 }
 
 /**
@@ -73,19 +77,35 @@ export function ChatPanel({
   onSend,
   onClose,
   onTyping,
+  focusInput,
+  revealTarget,
 }: ChatPanelProps) {
   const [draft, setDraft] = useState("");
   const log = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    input.current?.focus({ preventScroll: true });
+    if (focusInput) input.current?.focus({ preventScroll: true });
+    // Only on open: later changes of who opened it must not move focus.
   }, []);
 
   useEffect(() => {
     const el = log.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, pending]);
+
+  // After the scroll to the bottom above, so a revealed older message wins.
+  useEffect(() => {
+    if (!revealTarget) return;
+    const el = log.current?.querySelector<HTMLElement>(`[data-msg-id="${revealTarget.id}"]`);
+    const box = log.current;
+    if (!el || !box) return;
+    // Scroll the log only (scrollIntoView would also move the page). The gap above the message
+    // is its scroll-margin-top, a token in assistant.css.
+    const gap = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+    box.scrollTop += el.getBoundingClientRect().top - box.getBoundingClientRect().top - gap;
+    el.focus({ preventScroll: true });
+  }, [revealTarget]);
 
   const submit = (ev: FormEvent) => {
     ev.preventDefault();
@@ -103,7 +123,7 @@ export function ChatPanel({
           <span className="ff-chat__name">Flame assistant</span>
           <span className="ff-chat__sub">Answers cite NASA PSI records</span>
         </div>
-        <Button variant="ghost" size="sm" icon aria-label="Close chat" onClick={onClose}>
+        <Button variant="ghost" icon aria-label="Close chat" onClick={onClose}>
           <Close />
         </Button>
       </header>
@@ -134,8 +154,18 @@ export function ChatPanel({
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`ff-msg${m.role === "user" ? " ff-msg--user" : ""}${m.error ? " ff-msg--error" : ""}`}
+            data-msg-id={m.id}
+            tabIndex={m.lab ? -1 : undefined}
+            aria-label={m.lab ? "Flame Lab prediction" : undefined}
+            role={m.lab ? "article" : undefined}
+            className={`ff-msg${m.role === "user" ? " ff-msg--user" : ""}${m.error ? " ff-msg--error" : ""}${m.lab ? " ff-msg--lab" : ""}`}
           >
+            {m.lab ? (
+              <>
+                <p className="ff-eyebrow ff-msg__eyebrow">Flame Lab prediction</p>
+                <p className="ff-msg__cond">{m.lab.conditions}</p>
+              </>
+            ) : null}
             <p>{m.text}</p>
             {m.citations && m.citations.length > 0 ? (
               <div className="ff-msg__src">

@@ -1,7 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { AssistantProvider, useAssistant } from "../assistant/AssistantContext";
 import { AssistantDock } from "../assistant/AssistantDock";
 import { motionTokens } from "../lib/motion";
 import { SkyMap } from "../sky/SkyMap";
@@ -18,7 +19,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function Root() {
   return (
     <TravelProvider>
-      <Shell />
+      <AssistantProvider>
+        <Shell />
+      </AssistantProvider>
     </TravelProvider>
   );
 }
@@ -27,7 +30,7 @@ function Root() {
 function Shell() {
   const { phase, leave } = useTravel();
   const reduce = useReducedMotion() ?? false;
-  const [chatOpen, setChatOpen] = useState(false);
+  const { open: chatOpen, setOpen: setChatOpen } = useAssistant();
 
   // Escape closes the chat if it is open; otherwise it returns to the sky.
   useEffect(() => {
@@ -38,7 +41,7 @@ function Shell() {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [chatOpen, leave]);
+  }, [chatOpen, setChatOpen, leave]);
 
   const t = motionTokens();
   return (
@@ -61,7 +64,7 @@ function Shell() {
           </motion.div>
         ) : null}
       </AnimatePresence>
-      <AssistantDock open={chatOpen} onOpenChange={setChatOpen} />
+      <AssistantDock />
     </div>
   );
 }

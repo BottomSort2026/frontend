@@ -9,7 +9,7 @@ Motion rules are in `DESIGN.md` and in the Motion section of the design system. 
 Use the Emil Kowalski skills if they are installed (`review-animations`, `animation-performance`, `choreograph`); otherwise apply `DESIGN.md` directly.
 
 1. Review every animation against the rules. Produce a table: what animates, trigger, duration, easing, properties, verdict. Flag anything that animates layout properties, uses `ease-in` to enter, exceeds its token, or cannot be interrupted.
-2. Test interruption for real: click a star and press `Escape` mid-flight; click "Back to sky" and immediately click another star; open and close the chat quickly; drag a slider while it is gliding to a preset. Nothing may jump, stick or end in a wrong state.
+2. Test interruption for real: click a star and press `Escape` mid-flight; click "Back to sky" and immediately click another star; open and close the chat quickly. Nothing may jump, stick or end in a wrong state.
 3. Performance: record the trip on a throttled CPU (4×). The sky canvas and the DOM layers must hold frame rate; if they do not, find which layer costs the time before changing anything.
 4. Reduced motion: with `prefers-reduced-motion: reduce`, confirm there is no zoom, no streaks, no twinkle and no sliding, and that everything is still reachable.
 5. Fix what you find, smallest change first. Do not add animations; removing one is a valid fix.

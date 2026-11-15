@@ -2,14 +2,18 @@
 // brief and ARCHITECTURE.md; scores and predictions are placeholders and are flagged `sample`,
 // so the interface can say so.
 
+import { ApiError } from "./errors";
 import {
   investigationUrl,
   type Citation,
   type ChatReply,
   type ChatRequest,
-  type ModelInfo,
-  type PredictRequest,
-  type PredictResponse,
+  type ExtinctionBlock,
+  type LabModelInfo,
+  type LabPredictRequest,
+  type LabPredictResponse,
+  type NearestTest,
+  type OutcomeBlock,
   type ProfileList,
 } from "./types";
 
@@ -96,46 +100,152 @@ const PROFILES: ProfileList = {
   ],
 };
 
-// The illustrative model-info from ARCHITECTURE.md §5 (option A, FLEX). The real one comes from the ML service.
-const MODEL_INFO: ModelInfo = {
+// Flame Lab. Ranges are the rounded ones of prediction_flow.md §5.1; the real ones come from
+// GET /mcp/lab/model-info. Predictions are fixtures built from the model cards' reference query
+// `iss_like_air` (docs/frontend_flame_lab.md §8). The sample adapter returns a fixture whatever the
+// inputs are: it never pretends to depend on them, and the interface says so.
+const LAB_MODEL_INFO: LabModelInfo = {
   sample: true,
-  model_version: "sample",
-  training_source: "Sample output: the ML service is not connected",
   inputs: {
-    fuel: { type: "enum", values: ["methanol", "heptane"] },
-    pressure_atm: { type: "float", min: 0.69, max: 3.05, unit: "atm", default: 1 },
+    fuel: { type: "enum", values: ["methanol", "heptane"], default: "methanol" },
+    pressure_atm: { type: "float", min: 0.69, max: 1.02, unit: "atm", default: 1 },
     o2: { type: "float", min: 0.12, max: 0.34, unit: "mole fraction", default: 0.21 },
-    co2: { type: "float", min: 0, max: 0.7, unit: "mole fraction", default: 0 },
-    he: { type: "float", min: 0, max: 0.45, unit: "mole fraction", default: 0 },
-    droplet_d0_mm: { type: "float", min: 1.1, max: 4.67, unit: "mm", default: 3 },
+    suppressant: { type: "enum", values: ["none", "co2", "he"], default: "none" },
+    suppressant_fraction: {
+      type: "float",
+      min: 0,
+      max: 0.5,
+      unit: "mole fraction",
+      default: 0,
+      by_selector: {
+        none: { min: 0, max: 0 },
+        co2: { min: 0.05, max: 0.5 },
+        he: { min: 0.05, max: 0.45 },
+      },
+    },
+    droplet_d0_mm: { type: "float", min: 1.1, max: 4.7, unit: "mm", default: 3 },
   },
-  outputs: ["outcome", "probabilities", "burning_rate_mm2_s", "extinction_diameter_mm"],
+  outputs: ["outcome", "extinction"],
 };
 
-const num = (v: string | number | undefined, fallback: number) =>
-  typeof v === "number" ? v : fallback;
+/** The query the fixtures were computed for. */
+const REFERENCE_INPUTS = {
+  fuel: "methanol",
+  pressure_atm: 1,
+  o2: 0.21,
+  suppressant: "none",
+  suppressant_fraction: 0,
+  droplet_d0_mm: 3,
+};
 
-/** A stand-in with the right shape and plausible directions. It is NOT a model and not for interpretation. */
-function samplePrediction(req: PredictRequest): PredictResponse {
-  const o2 = num(req.o2, 0.21);
-  const dilution = num(req.co2, 0) + 0.8 * num(req.he, 0);
-  const d0 = num(req.droplet_d0_mm, 3);
-  const score = (o2 - 0.12) * 9 - dilution * 3.2; // more oxygen burns on, more diluent puts it out
-  const completion = 1 / (1 + Math.exp(-(score - 1.2) * 2.4));
-  const disruption = (1 - completion) * 0.2;
-  const extinction = 1 - completion - disruption;
-  const outcome = completion >= extinction ? "completion" : "extinction";
-  return {
-    outcome,
-    probabilities: { extinction, completion, disruption },
-    burning_rate_mm2_s: +(0.45 + (o2 - 0.12) * 1.4).toFixed(2),
-    extinction_diameter_mm:
-      outcome === "extinction" ? +(d0 * (0.25 + dilution * 0.6)).toFixed(2) : null,
-    in_tested_range: true,
-    out_of_range_fields: [],
-    model_version: MODEL_INFO.model_version,
-    training_source: MODEL_INFO.training_source,
-  };
+const SOURCE = { dataset: "flex_tests", accession: "PSI-69", sha256: "sample" };
+// Placeholder IDs that look like placeholders. The real ones come from the k-NN.
+const near = (n: number, ends: string[]): NearestTest[] =>
+  ends.map((test_end, i) => ({
+    testsheet_id: `FLEX-0N${n + i}`,
+    cir_id: `CIR-0N${n + i}`,
+    test_end,
+    distance: 0.2 + i * 0.1,
+  }));
+
+const OUTCOME: OutcomeBlock = {
+  outcome: "extinction",
+  probabilities: { extinction: 0.587, no_extinction: 0.413 },
+  in_tested_range: true,
+  out_of_range_fields: [],
+  support_n: 10,
+  nearest_tests: near(1, ["extinction", "extinction", "disruption", "extinction", "completion"]),
+  confidence: "medium",
+  model_version: "flex-outcome-0.1",
+  training_source: { ...SOURCE, rows: 251 },
+};
+
+const EXTINCTION: ExtinctionBlock = {
+  extinction_diameter_ratio: 0.445,
+  extinction_diameter_mm: 1.336,
+  fuel_burned_fraction: 0.912,
+  in_tested_range: true,
+  out_of_range_fields: [],
+  support_n: 11,
+  // Two of these are also the outcome model's neighbours: the Lab lists each test once.
+  nearest_tests: [
+    ...near(1, ["extinction", "extinction"]),
+    ...near(6, ["extinction", "extinction", "extinction"]),
+  ],
+  confidence: "high",
+  model_version: "flex-extinction-0.2",
+  training_source: { ...SOURCE, rows: 156 },
+};
+
+const EXPLANATION =
+  "Sample explanation: the assistant service is not connected, so this text was not written for these conditions.";
+
+const reference = (
+  prediction: LabPredictResponse["prediction"],
+  isReference = false,
+): LabPredictResponse => ({
+  prediction,
+  explanation: EXPLANATION,
+  cited_tests: [{ testsheet_id: "FLEX-0N1", investigation_url: investigationUrl("PSI-69") }],
+  sample: { inputs: REFERENCE_INPUTS, reference: isReference },
+});
+
+/** The states reachable by hand with /flame-lab?sample=<name>, in sample mode only. */
+export const SAMPLE_FIXTURES = [
+  "no_extinction",
+  "out_of_range",
+  "no_explanation",
+  "invalid",
+  "down",
+] as const;
+export type SampleFixture = (typeof SAMPLE_FIXTURES)[number];
+
+function fixture(name: SampleFixture | undefined): LabPredictResponse {
+  switch (name) {
+    case "no_extinction":
+      return reference({
+        outcome: {
+          ...OUTCOME,
+          outcome: "no_extinction",
+          probabilities: { extinction: 0.318, no_extinction: 0.682 },
+          nearest_tests: near(1, [
+            "completion",
+            "disruption",
+            "completion",
+            "extinction",
+            "disruption",
+          ]),
+        },
+        extinction: EXTINCTION,
+      });
+    case "out_of_range":
+      return reference({
+        outcome: OUTCOME,
+        extinction: {
+          ...EXTINCTION,
+          in_tested_range: false,
+          out_of_range_fields: ["o2"],
+          support_n: 0,
+          confidence: "low",
+        },
+      });
+    case "no_explanation":
+      return {
+        ...reference({ outcome: OUTCOME, extinction: EXTINCTION }, true),
+        explanation: null,
+      };
+    case "invalid":
+      throw new ApiError(422, "POST /mcp/lab/predict failed with 422", {
+        detail: "Sample error: o2 + suppressant_fraction must be at most 1.",
+      });
+    case "down":
+      throw new ApiError(502, "POST /mcp/lab/predict failed with 502", {
+        error: "upstream_unreachable",
+        detail: "Sample error: the mcp service is not reachable",
+      });
+    default:
+      return reference({ outcome: OUTCOME, extinction: EXTINCTION }, true);
+  }
 }
 
 // Title and authors as ARCHITECTURE.md §6 gives them; the year is the one in its NASA number,
@@ -191,14 +301,18 @@ export async function getProfiles(): Promise<ProfileList> {
   return PROFILES;
 }
 
-export async function getModelInfo(): Promise<ModelInfo> {
+export async function getLabModelInfo(): Promise<LabModelInfo> {
   await wait(80);
-  return MODEL_INFO;
+  return LAB_MODEL_INFO;
 }
 
-export async function predict(req: PredictRequest): Promise<PredictResponse> {
-  await wait(60);
-  return samplePrediction(req);
+/** As slow as a real request with an LLM call in it, so the waiting state can be seen. */
+export async function labPredict(
+  _req: LabPredictRequest,
+  name?: SampleFixture,
+): Promise<LabPredictResponse> {
+  await wait(1500);
+  return fixture(name);
 }
 
 export async function chat(req: ChatRequest): Promise<ChatReply> {

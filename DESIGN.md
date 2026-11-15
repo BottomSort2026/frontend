@@ -5,8 +5,8 @@ The full system (tokens, eleven components with live previews, motion guide) is 
 ## Principles
 
 1. **The sky is the navigation.** No navbar. Four stars of Crux are the four destinations: Acrux → Mission, Mimosa → Fire safety, Imai → Library, Gacrux → Flame lab. Everything else lives in the corners.
-2. **Blue in free fall, amber under gravity.** `flame-blue` means microgravity and is the primary accent. `ember` means 1 g and caution. On any gravity scale the 0 g end is `flame-blue` and the 1 g end is `ember`.
-3. **Say what is not measured.** Anything that is not PSI data carries a label: "Illustrative model", "Sample…", "Interpolated".
+2. **Blue in free fall, amber for caution.** `flame-blue` means microgravity and is the primary accent. `ember` means caution, for example a request outside the tested conditions.
+3. **Say what is not measured.** Anything that is not PSI data carries a label: "Sample ranking", "Sample output". The Flame Lab says where its data comes from: "Microgravity (ISS) data only".
 4. **One long animation.** The trip to a star (900 ms) is the only movement over 420 ms.
 
 ## Colour

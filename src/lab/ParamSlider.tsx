@@ -22,10 +22,10 @@ interface ParamSliderProps {
   /** A tick was chosen: the parent glides the value there. */
   onJump: (value: number) => void;
   ticks: readonly SliderTick[];
-  /** The track becomes the gravity scale: flame-blue at 0 g, ember at 1 g. */
-  variant?: "gravity";
-  /** A range with no measured data behind it, drawn dashed, with its legend. */
-  gap?: { from: number; to: number; legend: string };
+  /** Kept in place but not usable (45 % opacity), so the layout does not jump. */
+  disabled?: boolean;
+  /** Shown in place of the ticks while disabled, e.g. "No suppressant added". */
+  helper?: string;
 }
 
 export function ParamSlider({
@@ -40,13 +40,14 @@ export function ParamSlider({
   onChange,
   onJump,
   ticks,
-  variant,
-  gap,
+  disabled = false,
+  helper,
 }: ParamSliderProps) {
-  const span = max - min;
-  const p = (value - min) / span;
+  const span = max - min || 1;
+  const p = Math.min(1, Math.max(0, (value - min) / span));
+  const shown = `${value.toFixed(digits)} ${unit}`.trim();
   return (
-    <div className={`ff-slider${variant ? ` ff-slider--${variant}` : ""}`} style={{ "--p": p }}>
+    <div className={`ff-slider${disabled ? " ff-slider--disabled" : ""}`} style={{ "--p": p }}>
       <div className="ff-slider__head">
         <label className="ff-eyebrow" htmlFor={id}>
           {label}
@@ -57,14 +58,7 @@ export function ParamSlider({
         </output>
       </div>
       <div className="ff-slider__rail">
-        {gap ? (
-          <span
-            className="ff-slider__gap"
-            style={{ "--from": (gap.from - min) / span, "--to": (gap.to - min) / span }}
-          />
-        ) : (
-          <span className="ff-slider__fill" />
-        )}
+        <span className="ff-slider__fill" />
         <input
           id={id}
           type="range"
@@ -72,31 +66,35 @@ export function ParamSlider({
           max={max}
           step={step}
           value={value}
-          aria-describedby={gap ? `${id}-legend` : undefined}
+          disabled={disabled}
+          aria-valuetext={shown}
+          aria-describedby={disabled && helper ? `${id}-helper` : undefined}
           onChange={(ev) => onChange(Number(ev.target.value))}
         />
       </div>
       <div className="ff-slider__ticks">
-        {ticks.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            className={`ff-slider__tick${t.align ? ` ff-slider__tick--${t.align}` : ""}`}
-            style={{ "--at": (t.value - min) / span }}
-            aria-pressed={Math.abs(t.value - value) < span / 400}
-            aria-label={`${label}: ${t.label}, ${t.hint} ${unit}`}
-            onClick={() => onJump(t.value)}
-          >
-            {t.label}
-            <span>{t.hint}</span>
-          </button>
-        ))}
+        {disabled && helper ? (
+          <p className="ff-slider__helper" id={`${id}-helper`}>
+            {helper}
+          </p>
+        ) : null}
+        {disabled
+          ? null
+          : ticks.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                className={`ff-slider__tick${t.align ? ` ff-slider__tick--${t.align}` : ""}`}
+                style={{ "--at": (t.value - min) / span }}
+                aria-pressed={Math.abs(t.value - value) < span / 400}
+                aria-label={`${label}: ${t.label}, ${t.hint} ${unit}`}
+                onClick={() => onJump(t.value)}
+              >
+                {t.label}
+                <span>{t.hint}</span>
+              </button>
+            ))}
       </div>
-      {gap ? (
-        <p className="ff-slider__legend" id={`${id}-legend`}>
-          {gap.legend}
-        </p>
-      ) : null}
     </div>
   );
 }

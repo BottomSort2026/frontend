@@ -9,16 +9,35 @@ export interface ChatMessage {
   text: string;
   citations?: Citation[];
   error?: boolean;
+  /** A Flame Lab prediction delivered as an assistant message. */
+  lab?: {
+    /** The conditions it was computed for, e.g. "methanol · 1.00 atm · 21 % O₂ · …". */
+    conditions: string;
+  };
+  /** What goes into the history of the next /chat request, when it differs from `text`. */
+  history?: string;
 }
 
 /** Where the assistant is in the life of a request. The face acts it out. */
 export type AssistantStatus = "idle" | "waiting" | "answered" | "unsourced" | "failed";
 
+/**
+ * The conversation, held in memory for the session. Used once, by AssistantProvider: every
+ * view talks to the same assistant.
+ */
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [status, setStatus] = useState<AssistantStatus>("idle");
+  /** How the last request ended. "waiting" is derived by the provider from what is running. */
+  const [outcome, setOutcome] = useState<AssistantStatus>("idle");
   const nextId = useRef(1);
   const { mutate, isPending } = useMutation({ mutationFn: (req: ChatRequest) => api.chat(req) });
+
+  /** Appends a message and returns its id. */
+  const add = useCallback((message: Omit<ChatMessage, "id">): number => {
+    const id = nextId.current++;
+    setMessages((list) => [...list, { ...message, id }]);
+    return id;
+  }, []);
 
   const send = useCallback(
     (raw: string) => {
@@ -26,41 +45,28 @@ export function useChat() {
       if (!text || isPending) return;
       const history = messages
         .filter((m) => !m.error)
-        .map((m) => ({ role: m.role, content: m.text }));
-      setMessages((list) => [...list, { id: nextId.current++, role: "user", text }]);
-      setStatus("waiting");
+        .map((m) => ({ role: m.role, content: m.history ?? m.text }));
+      add({ role: "user", text });
       mutate(
         { message: text, history },
         {
           onSuccess: (reply) => {
-            setMessages((list) => [
-              ...list,
-              {
-                id: nextId.current++,
-                role: "assistant",
-                text: reply.answer,
-                citations: reply.citations,
-              },
-            ]);
-            setStatus(reply.citations.length > 0 ? "answered" : "unsourced");
+            add({ role: "assistant", text: reply.answer, citations: reply.citations });
+            setOutcome(reply.citations.length > 0 ? "answered" : "unsourced");
           },
           onError: () => {
-            setMessages((list) => [
-              ...list,
-              {
-                id: nextId.current++,
-                role: "assistant",
-                text: "I could not reach the assistant service. Try again in a moment.",
-                error: true,
-              },
-            ]);
-            setStatus("failed");
+            add({
+              role: "assistant",
+              text: "I could not reach the assistant service. Try again in a moment.",
+              error: true,
+            });
+            setOutcome("failed");
           },
         },
       );
     },
-    [isPending, messages, mutate],
+    [add, isPending, messages, mutate],
   );
 
-  return { messages, status, pending: isPending, send };
+  return { messages, outcome, setOutcome, pending: isPending, send, add };
 }

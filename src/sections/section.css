@@ -112,14 +112,6 @@
     padding-right: var(--space-4);
   }
 }
-.ff-sec__sub {
-  font-family: var(--font-display);
-  font-size: 32px;
-  line-height: 1.12;
-  font-weight: 400;
-  color: var(--ink);
-}
-
 /* The not-found page sits over the whole sky, wordmark included. */
 .ff-section--over {
   z-index: calc(var(--z-hud) + 1);

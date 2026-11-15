@@ -78,9 +78,14 @@
     color: var(--ink);
   }
 }
-.ff-btn:disabled {
+.ff-btn:disabled,
+.ff-btn[aria-disabled="true"] {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
+}
+/* A busy button keeps keyboard focus (aria-disabled, not disabled), so it keeps its ring. */
+.ff-btn[aria-disabled="true"]:focus-visible {
+  box-shadow: var(--ring-focus);
 }

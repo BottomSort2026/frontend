@@ -1,6 +1,6 @@
 # Frontend: working rules
 
-The project context is in `docs/ARCHITECTURE.md` and the project-wide rules in `docs/CLAUDE.md`. This file adds what is specific to `frontend/`. Read `README.md` for the layout and `DESIGN.md` before touching anything visual.
+The project context is in `docs/ARCHITECTURE.md` and the project-wide rules in `docs/CLAUDE.md`. This file adds what is specific to `frontend/`. For the Flame Lab, `docs/frontend_flame_lab.md` (with `docs/prediction_flow.md`) is the team's decision and wins over `ARCHITECTURE.md` §5 and `src/api/types.ts` wherever they disagree. Read `README.md` for the layout and `DESIGN.md` before touching anything visual.
 
 ## Commands
 
@@ -19,11 +19,11 @@ Import from `vite-plus` and `vite-plus/test`, not from `vite` or `vitest` (a lin
 
 - **Git is the developer's.** Do not commit, push, create branches or open pull requests. Leave the changes in the working tree and say what changed.
 - **Stay in `frontend/`.** Every other service is its own repository: the gateway is `api-gateway/` (NestJS), and the MCP, ML and data services live in theirs. There is no `shared/` folder. If a task needs a change in any of them, or in a root `compose.yaml`, stop and say which change and why.
-- **The contract lives in `src/api/types.ts`.** It follows `ARCHITECTURE.md` §5 and §6. Items that document marks OPEN (prediction target, `profiles.json` hosting) and the `/chat` schema it does not define are not to be assumed: keep the code tolerant of missing fields, and change `types.ts` and `mock.ts` together when the team decides.
+- **The contract lives in `src/api/types.ts`.** It follows `ARCHITECTURE.md` §5 and §6, except for the Flame Lab, which follows `docs/frontend_flame_lab.md` §8. Items still OPEN (`profiles.json` hosting, the Lab route names marked _proposed_) and the `/chat` schema it does not define are not to be assumed: keep the code tolerant of missing fields, and change `types.ts` and `mock.ts` together when the team decides.
 - **Only `src/api/client.ts` calls `fetch`.** Components read data through the query definitions in `src/api/queries.ts`. API paths are relative; the base comes from `VITE_API_URL`.
 - **No hand-written design values.** Colours, spacing, radii, durations and easings come from the tokens: `var(--token)` in CSS, `src/lib/tokens.ts` and `src/lib/motion.ts` in TypeScript. `src/styles/tokens.css` is generated; change `design/tokens.json` and regenerate, never edit the CSS.
 - **No new dependencies** for animation, components or state without asking. Motion, anime.js, TanStack Router and TanStack Query cover the current scope.
-- **Honest labels stay.** "Illustrative model", "Sample ranking", "Sample output" and "Interpolated" are part of the product. Do not remove one unless the thing it describes became real.
+- **Honest labels stay.** "Sample ranking", "Sample output" and "Microgravity (ISS) data only" are part of the product. Do not remove one unless the thing it describes became real.
 - **Interface text is English**, sentence case, verb first on buttons, units with a space (`30 %`, `10.2 psi`). The assistant answers in the user's language; that is the backend's job.
 - **Citations link to the PSI investigation page**, never to a file URL (pre-signed links expire).
 

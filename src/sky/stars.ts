@@ -76,7 +76,7 @@ export const STARS: readonly StarDef[] = [
   },
 ];
 
-/** Stars that are not destinations: Ginan, and the two Pointers when the viewport is wide enough. */
+/** Stars that are not destinations: Ginan, and the two Pointers when the viewport is wide enough.*/
 export const PLAIN_STARS: readonly PlainStar[] = [
   { name: "", dx: 1.07, dy: 0.4, mag: 0.55 },
   { name: "Hadar", dx: -11.7, dy: 0.37, mag: 0.85 },

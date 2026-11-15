@@ -191,6 +191,18 @@
 .ff-msg--error {
   color: var(--hazard);
 }
+.ff-msg--lab {
+  scroll-margin-top: var(--space-2);
+}
+.ff-msg__eyebrow {
+  color: var(--flame-blue);
+}
+.ff-msg__cond {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ink-muted);
+}
 .ff-msg__src {
   display: flex;
   flex-direction: column;

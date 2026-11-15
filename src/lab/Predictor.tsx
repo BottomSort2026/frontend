@@ -1,191 +1,213 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { modelInfoQuery, predictionQuery } from "../api/queries";
-import type { ModelInfo, ModelInput, PredictRequest } from "../api/types";
-import { formatNumber, humanize } from "../lib/labels";
-import { Readout } from "../ui/Readout";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { ApiError, errorDetail } from "../api/client";
+import type { SampleFixture } from "../api/mock";
+import { modelInfoQuery, predictMutation } from "../api/queries";
+import type { LabInputs, LabModelInfo, LabPredictResponse } from "../api/types";
+import { useAssistant } from "../assistant/AssistantContext";
+import { choiceLabel, formatNumber, humanize, OUTCOME_VERDICT } from "../lib/labels";
+import { Button } from "../ui/Button";
+import { Alert } from "../ui/icons";
 import { FilterTag, Tag } from "../ui/Tag";
+import {
+  buildInputs,
+  defaultValues,
+  displaySpec,
+  fromDisplay,
+  normalizeValues,
+  rangeOf,
+  sameInputs,
+  selectorOf,
+} from "./lab";
+import { LabResult } from "./LabResult";
 import { ParamSlider } from "./ParamSlider";
 import "./predictor.css";
 
-// The simulator proper: Gateway -> ML /ml/predict, deterministic, no LLM (ARCHITECTURE.md §5).
-// The prediction target is still OPEN, so nothing here knows the model's fields: the controls
-// are built from GET /ml/model-info and the outputs are rendered by their type.
+// The Flame Lab (docs/frontend_flame_lab.md §4–§6): Gateway → MCP /lab/predict → engine + LLM.
+// The controls are built from model-info, a request goes out only on Predict, and every number on
+// screen comes from the response. The explanation is an assistant message in the dock (§7).
 
-function defaults(info: ModelInfo): PredictRequest {
-  const req: PredictRequest = {};
-  for (const [key, input] of Object.entries(info.inputs)) {
-    req[key] =
-      input.type === "enum"
-        ? (input.default ?? input.values[0] ?? "")
-        : (input.default ?? input.min);
-  }
-  return req;
+interface Shown {
+  response: LabPredictResponse;
+  /** The inputs that were sent for it. */
+  inputs: LabInputs;
+  /** Its message in the assistant dock, where the explanation lives. */
+  messageId: number;
 }
 
-function stepFor(input: Extract<ModelInput, { type: "float" }>): { step: number; digits: number } {
-  const span = input.max - input.min;
-  if (span <= 1) return { step: 0.01, digits: 2 };
-  if (span <= 10) return { step: 0.05, digits: 2 };
-  return { step: 1, digits: 0 };
-}
+const round6 = (v: number) => Math.round(v * 1e6) / 1e6;
 
-function useDebounced<T>(value: T, ms: number): T {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setSettled(value), ms);
-    return () => window.clearTimeout(t);
-  }, [value, ms]);
-  return settled;
-}
-
-function isProbabilities(v: unknown): v is Record<string, number> {
+function Controls({
+  model,
+  values,
+  set,
+}: {
+  model: LabModelInfo;
+  values: LabInputs;
+  set: (key: string, value: string | number) => void;
+}) {
   return (
-    typeof v === "object" &&
-    v !== null &&
-    !Array.isArray(v) &&
-    Object.values(v).every((x) => typeof x === "number")
-  );
-}
-
-function Output({ name, value }: { name: string; value: unknown }) {
-  const { label, unit } = humanize(name);
-  if (isProbabilities(value)) {
-    return (
-      <div className="ff-probs" role="group" aria-label={label}>
-        <span className="ff-eyebrow">{label}</span>
-        {Object.entries(value).map(([k, p]) => (
-          <div className="ff-probs__row" key={k}>
-            <span>{humanize(k).label}</span>
-            <div className="ff-probs__bar">
-              <i style={{ "--v": Math.max(0, Math.min(1, p)) }} />
+    <>
+      {Object.entries(model.inputs).map(([key, input]) => {
+        const { label, unit } = humanize(key);
+        const name = input.label ?? label;
+        if (input.type === "enum") {
+          return (
+            <div className="ff-predict__enum" key={key} role="group" aria-label={name}>
+              <span className="ff-eyebrow">{name}</span>
+              <div className="ff-predict__choices">
+                {input.values.map((v) => (
+                  <FilterTag key={v} pressed={values[key] === v} onPress={() => set(key, v)}>
+                    {choiceLabel(v)}
+                  </FilterTag>
+                ))}
+              </div>
             </div>
-            <b>{Math.round(p * 100)} %</b>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (typeof value === "number")
-    return <Readout label={label} value={formatNumber(value)} unit={unit} />;
-  if (typeof value === "string")
-    return <Readout label={label} value={humanize(value).label} variant="text" />;
-  return (
-    <Readout label={label} value="n/a" unit={unit} note="Not predicted for these conditions" />
+          );
+        }
+        const spec = displaySpec(input, unit);
+        const range = rangeOf(model, input, values);
+        const selector = selectorOf(model, input);
+        const min = round6(range.min * spec.scale);
+        const max = round6(range.max * spec.scale);
+        return (
+          <ParamSlider
+            key={key}
+            id={`predict-${key}`}
+            label={name}
+            unit={spec.unit}
+            digits={spec.digits}
+            min={min}
+            max={max}
+            step={spec.step}
+            value={round6(Number(values[key]) * spec.scale)}
+            onChange={(v) => set(key, fromDisplay(v, spec))}
+            onJump={(v) => set(key, fromDisplay(v, spec))}
+            disabled={range.disabled}
+            helper={selector ? `No ${humanize(selector).label.toLowerCase()} added` : "Not used"}
+            ticks={[
+              { value: min, label: "Min tested", hint: formatNumber(min), align: "after" },
+              { value: max, label: "Max tested", hint: formatNumber(max), align: "before" },
+            ]}
+          />
+        );
+      })}
+    </>
   );
 }
 
-/** Predictions from the ML service for conditions the user sets, bounded to the ranges PSI actually tested. */
-export function Predictor() {
+/** The whole Flame Lab under its header. `fixture` picks a sample state (`?sample=`). */
+export function Predictor({ fixture }: { fixture?: SampleFixture }) {
   const info = useQuery(modelInfoQuery);
-  const [edited, setEdited] = useState<PredictRequest>({});
-  const inputs = useMemo(
-    () => (info.data ? { ...defaults(info.data), ...edited } : null),
-    [info.data, edited],
-  );
-  const prediction = useQuery(predictionQuery(useDebounced(inputs, 200)));
-  const set = (key: string, value: string | number) => setEdited((r) => ({ ...r, [key]: value }));
+  const [values, setValues] = useState<LabInputs | null>(null);
+  const [shown, setShown] = useState<Shown | null>(null);
+  const assistant = useAssistant();
+  // Mutation-level callbacks: they still run if the person leaves the Lab mid-request, so the
+  // answer reaches the dock and the face never stays waiting.
+  const predict = useMutation({
+    ...predictMutation(fixture),
+    onMutate: () => assistant.lab.started(),
+    onSuccess: (response, inputs) => {
+      const messageId = assistant.lab.answered({ response, inputs, model: info.data! });
+      setShown({ response, inputs, messageId });
+    },
+    onError: () => assistant.lab.failed(),
+  });
 
   if (info.isPending)
-    return <p className="ff-predict__empty">Asking the model what it can predict…</p>;
-  if (info.isError || !info.data || !inputs) {
+    return <p className="ff-predict__empty">Asking the models what they can predict…</p>;
+  if (info.isError || !info.data) {
     return (
       <p className="ff-predict__empty" role="alert">
-        The prediction service is not answering. The explainer above still works; predictions return
-        when the service does.
+        The prediction service is not answering. The Lab returns when the service does.
       </p>
     );
   }
 
   const model = info.data;
-  const result = prediction.data;
-  const outOfRange = result?.in_tested_range === false;
+  const current = values ?? defaultValues(model);
+  const inputs = buildInputs(model, current);
+  const set = (key: string, value: string | number) =>
+    setValues(normalizeValues(model, { ...current, [key]: value }, key));
+
+  const running = predict.isPending;
+  const err = predict.isError ? predict.error : null;
+  const invalid = err instanceof ApiError && err.status === 422;
+  const down = err !== null && !invalid;
+  // A 422 is about the inputs that were sent: once they change, its message no longer applies.
+  const invalidMessage =
+    invalid && sameInputs(predict.variables, inputs)
+      ? (errorDetail(err.body) ?? "The models did not accept these conditions.")
+      : null;
+  // Stale means the inputs changed. A failed retry with the same inputs leaves the result valid.
+  const stale = shown !== null && !sameInputs(shown.inputs, inputs);
+
+  const onPredict = () => {
+    if (!running) predict.mutate(inputs);
+  };
+
+  const status = running
+    ? "Asking the models…"
+    : shown && !stale
+      ? `Prediction ready. ${OUTCOME_VERDICT[shown.response.prediction.outcome.outcome] ?? ""}`
+      : "";
 
   return (
     <div className="ff-predict">
       <div className="ff-predict__inputs">
-        {Object.entries(model.inputs).map(([key, input]) => {
-          const { label, unit } = humanize(key);
-          const name = input.label ?? label;
-          if (input.type === "enum") {
-            return (
-              <div className="ff-predict__enum" key={key} role="group" aria-label={name}>
-                <span className="ff-eyebrow">{name}</span>
-                <div className="ff-predict__choices">
-                  {input.values.map((v) => (
-                    <FilterTag key={v} pressed={inputs[key] === v} onPress={() => set(key, v)}>
-                      {v}
-                    </FilterTag>
-                  ))}
-                </div>
-              </div>
-            );
-          }
-          const { step, digits } = stepFor(input);
-          return (
-            <ParamSlider
-              key={key}
-              id={`predict-${key}`}
-              label={name}
-              unit={input.unit ?? unit ?? ""}
-              digits={digits}
-              min={input.min}
-              max={input.max}
-              step={step}
-              value={Number(inputs[key])}
-              onChange={(v) => set(key, v)}
-              onJump={(v) => set(key, v)}
-              ticks={[
-                {
-                  value: input.min,
-                  label: "Min tested",
-                  hint: formatNumber(input.min),
-                  align: "after",
-                },
-                {
-                  value: input.max,
-                  label: "Max tested",
-                  hint: formatNumber(input.max),
-                  align: "before",
-                },
-              ]}
-            />
-          );
-        })}
+        <Controls model={model} values={current} set={set} />
+        <div className="ff-predict__action">
+          <Button
+            variant="primary"
+            onClick={onPredict}
+            aria-disabled={running || undefined}
+            aria-busy={running || undefined}
+          >
+            {running ? "Predicting…" : "Predict"}
+          </Button>
+          {invalidMessage ? (
+            <p className="ff-predict__invalid" role="alert">
+              <Alert />
+              <span>
+                <strong>Not accepted.</strong> {invalidMessage}
+              </span>
+            </p>
+          ) : null}
+        </div>
       </div>
 
-      <div className="ff-predict__out" aria-live="polite">
-        <div className="ff-predict__flags">
-          {model.sample ? (
-            <Tag variant="gap">Sample output</Tag>
-          ) : (
-            <Tag variant="accent">{model.model_version}</Tag>
-          )}
-          {outOfRange ? <Tag variant="ember">Outside the tested range</Tag> : null}
-          {result?.out_of_range_fields?.map((f) => (
-            <Tag key={f} variant="ember">
-              {humanize(f).label}
-            </Tag>
-          ))}
-        </div>
-        {prediction.isError ? (
-          <p className="ff-predict__empty" role="alert">
-            The model could not predict these conditions. Change a value to try again.
-          </p>
-        ) : result ? (
-          <div className="ff-predict__grid">
-            {model.outputs.map((name) => (
-              <Output key={name} name={name} value={result[name]} />
-            ))}
-          </div>
-        ) : (
-          <p className="ff-predict__empty">Predicting…</p>
-        )}
-        <p className="ff-predict__source">
-          {model.sample
-            ? "Placeholder values with the right shape, shown until the ML service is connected. Do not interpret them."
-            : `Trained on ${result?.training_source ?? model.training_source}. Valid only within the conditions tested in PSI.`}
+      <div className="ff-predict__out">
+        <p className="ff-visually-hidden" role="status">
+          {status}
         </p>
+        {model.sample || stale ? (
+          <div className="ff-predict__flags">
+            {model.sample ? <Tag variant="gap">Sample output</Tag> : null}
+            {stale ? <Tag variant="gap">Conditions changed: press Predict to update</Tag> : null}
+          </div>
+        ) : null}
+        {down ? (
+          <p className={shown ? "ff-predict__down" : "ff-predict__empty"} role="alert">
+            The prediction service is not answering.
+          </p>
+        ) : null}
+        {shown ? (
+          <LabResult
+            model={model}
+            response={shown.response}
+            inputs={shown.inputs}
+            stale={stale}
+            onReadExplanation={
+              shown.response.explanation?.trim()
+                ? () => assistant.reveal(shown.messageId)
+                : undefined
+            }
+          />
+        ) : down ? null : (
+          <p className="ff-predict__empty">
+            {running ? "Asking the models…" : "Set the conditions and press Predict."}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -2,13 +2,13 @@
 
 The web dashboard for _Flame in Freefall_ (NASA Space Apps 2026, team BottomSort). The home screen is the night sky of the Valle del Elqui: each star of the Southern Cross is a section, and choosing one flies the camera into it.
 
-| Star                        | Route          | View in `ARCHITECTURE.md` | Backend                                  |
-| --------------------------- | -------------- | ------------------------- | ---------------------------------------- |
-| Acrux, "Mission"            | `/mission`     | Information               | none (static)                            |
-| Mimosa, "Fire safety"       | `/fire-safety` | Information               | none (static)                            |
-| Imai, "Library"             | `/library`     | Information               | `GET /profiles`                          |
-| Gacrux, "Flame lab"         | `/flame-lab`   | Simulator                 | `GET /ml/model-info`, `POST /ml/predict` |
-| the assistant, bottom right | (panel)        | Chatbot                   | `POST /chat`                             |
+| Star                        | Route          | View in `ARCHITECTURE.md` | Backend                                                       |
+| --------------------------- | -------------- | ------------------------- | ------------------------------------------------------------- |
+| Acrux, "Mission"            | `/mission`     | Information               | none (static)                                                 |
+| Mimosa, "Fire safety"       | `/fire-safety` | Information               | none (static)                                                 |
+| Imai, "Library"             | `/library`     | Information               | `GET /profiles`                                               |
+| Gacrux, "Flame lab"         | `/flame-lab`   | Simulator                 | `GET /mcp/lab/model-info`, `POST /mcp/lab/predict` (proposed) |
+| the assistant, bottom right | (panel)        | Chatbot                   | `POST /chat`                                                  |
 
 It runs with no backend: with `VITE_API_URL` empty, every call is answered from sample data, and the interface labels it as sample.
 
@@ -35,7 +35,7 @@ VITE_API_URL=/
 GATEWAY_URL=http://localhost:3000   # 8080 under Compose
 ```
 
-The dev server forwards `/profiles`, `/chat` and `/ml` to the gateway, so the browser stays same-origin as it is in production.
+The dev server forwards `/profiles`, `/chat` and `/mcp` to the gateway, so the browser stays same-origin as it is in production. These paths are reserved for the API: no page of the app may live under them (`/mcp` carries the Flame Lab).
 
 **Direct (cross-origin):**
 
@@ -50,7 +50,7 @@ The browser calls the gateway from `localhost:5173`, so the gateway must allow t
 - **Vite+** (`vp`): dev server, build, tests (Vitest), lint (Oxlint) and format (Oxfmt) from one `vite.config.ts`.
 - **React 19 + TypeScript**, plain CSS driven by design tokens (`src/styles/tokens.css`).
 - **TanStack Router**, file-based (`src/routes`), with search params for the library filters. **TanStack Query** for everything from the gateway.
-- **Motion** for interface transitions and the travel value, **anime.js** for the load choreography, two hand-written **Canvas 2D** modules for the stars and the flame, **BoopFace** for the assistant's face.
+- **Motion** for interface transitions and the travel value, **anime.js** for the load choreography, a hand-written **Canvas 2D** module for the stars, **BoopFace** for the assistant's face.
 
 ## Layout
 
@@ -59,10 +59,10 @@ src/
   routes/       one file per URL; __root.tsx holds the sky, the back control and the assistant
   sky/          SkyMap, NavStar, the star catalogue, layout math, the canvas, the travel state
   sections/     the shell every section shares (heading, staggered entrance)
-  lab/          FlameSim (illustrative explainer), Predictor (ML service), ParamSlider
+  lab/          Predictor (inputs and Predict), LabResult (outputs), lab.ts (their logic), ParamSlider
   library/      InvestigationCard and ranking
   safety/       SafetyPillar
-  assistant/    BotLauncher, ChatPanel, AssistantFace, useChat
+  assistant/    AssistantProvider (one conversation for the app; the Lab adds its explanations), dock, chat panel, face, labMessage
   api/          types (the contract), client, queries, mock (sample data)
   ui/           Button, Tag, Readout, icons
   lib/          token and label helpers
@@ -73,7 +73,7 @@ docs/prompts/   ready-to-send prompts for the next pieces of work
 
 ## Two things that are easy to get wrong
 
-**The flame picture is an explainer, not a model.** `FlameSim` runs locally on gravity, oxygen and airflow and is labelled "Illustrative model". Predictions from PSI data are a separate component, `Predictor`, which builds its controls from `GET /ml/model-info` and knows no field names, because the prediction target is still open.
+**The Flame Lab shows only what the models predict.** The team's flow is `docs/frontend_flame_lab.md`: two models trained on the 274 FLEX tests (PSI-69, all in microgravity) say whether a droplet flame goes out and at what droplet size, and their k-NN shows the closest real tests. Gravity, airflow, flame shape and burning rate are not predicted, so the Lab does not show them. Its backend is the MCP: `GET /mcp/lab/model-info` and `POST /mcp/lab/predict` (§8 of that document; the names are proposed until the gateway owner confirms them). `Predictor` builds its controls from model-info and sends a request only when Predict is pressed. Without a backend, Predict answers with the model cards' reference case whatever the inputs, labelled "Sample output"; `/flame-lab?sample=no_extinction` (or `out_of_range`, `no_explanation`, `invalid`, `down`) shows the other states.
 
 **Sample data must say it is sample.** `api/mock.ts` flags its profiles and its model as `sample`, and the interface shows "Sample ranking" and "Sample output". Keep that when you add data.
 

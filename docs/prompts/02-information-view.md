@@ -26,6 +26,7 @@ Fetch the real `GET /profiles` (ask for the URL if `GATEWAY_URL` is not set). Co
 `pnpm check` and `pnpm test` pass; a unit test covers parsing the `compare` search param and ranking with missing relevance values; you have looked at the detail and compare pages at 1280 px and 390 px.
 
 ## Addendum
+
 - `ApiError` must keep the gateway's `{ error, detail }` body. When `GET /profiles` answers
   404 `profiles_not_built`, the Library shows its own state inside the normal section shell
   ("The investigation profiles have not been built yet"), with "Back to sky" still working.

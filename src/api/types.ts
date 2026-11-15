@@ -1,13 +1,14 @@
-// What the frontend expects from the gateway, following ARCHITECTURE.md §5 and §6.
+// What the frontend expects from the gateway. ARCHITECTURE.md §5 and §6 for the profiles and the
+// chat; docs/frontend_flame_lab.md §8 and docs/prediction_flow.md §5 for the Flame Lab, which win
+// over ARCHITECTURE.md for the Lab.
 //
-//   GET  /profiles        static investigation profiles (Information view)
-//   GET  /ml/model-info   the model describing its own inputs (Simulator)
-//   POST /ml/predict      one prediction (Simulator)
-//   POST /chat            the agent (Chatbot)
+//   GET  /profiles             static investigation profiles (Information view)
+//   GET  /mcp/lab/model-info   the models describing their own inputs (Flame Lab, proposed name)
+//   POST /mcp/lab/predict      one prediction plus its explanation (Flame Lab, proposed name)
+//   POST /chat                 the agent (Chatbot)
 //
-// Still OPEN in the architecture, so everything here stays tolerant: the prediction target
-// (which decides the /ml/* fields), where profiles.json is hosted, and the /chat schema,
-// which the document does not define yet. The /chat types below are a PROPOSAL.
+// Still OPEN, so everything here stays tolerant: where profiles.json is hosted, the final Lab
+// route and field names, and the /chat schema. The /chat types below are a PROPOSAL.
 
 export type Pillar = "prevention" | "detection" | "suppression";
 export type Habitat = "spacecraft" | "station" | "moon_base" | "rover";
@@ -44,27 +45,115 @@ export interface ProfileList {
 
 export type ModelInput =
   | { type: "enum"; values: string[]; label?: string; default?: string }
-  | { type: "float"; min: number; max: number; unit?: string; label?: string; default?: number };
+  | {
+      type: "float";
+      min: number;
+      max: number;
+      unit?: string;
+      label?: string;
+      default?: number;
+      /**
+       * The range depends on the value of a choice: `suppressant_fraction` has one range per
+       * `suppressant`. A choice missing here, or with min = max, means "not used": send 0.
+       */
+      by_selector?: Record<string, { min: number; max: number }>;
+      /** The choice `by_selector` is keyed on. When absent, the choice whose values match its keys. */
+      selector?: string;
+    };
 
-/** GET /ml/model-info: the simulator builds its controls from this, so limits are never hard-coded. */
-export interface ModelInfo {
-  model_version: string;
-  training_source: string;
+export type FloatInput = Extract<ModelInput, { type: "float" }>;
+
+/**
+ * GET /mcp/lab/model-info. The Lab builds its controls from the outcome model's inputs, so no
+ * range is written in the frontend. The document does not fix the envelope: `inputs` may sit at
+ * the top level or under `outcome` (see normalizeModelInfo in client.ts).
+ */
+export interface LabModelInfo {
   inputs: Record<string, ModelInput>;
-  outputs: string[];
+  outputs?: string[];
   /** Set by the sample adapter only. */
   sample?: boolean;
 }
 
-export type PredictRequest = Record<string, string | number>;
+/**
+ * The six inputs of prediction_flow.md §5.1: fuel, pressure_atm, o2, suppressant,
+ * suppressant_fraction, droplet_d0_mm. Typed loosely because the controls are built from
+ * model-info, not from these names. Mole fractions are sent as fractions (0.21), never percent.
+ */
+export type LabInputs = Record<string, string | number>;
 
-/** POST /ml/predict. The outputs named in ModelInfo.outputs arrive as top-level fields. */
-export interface PredictResponse {
+export interface LabPredictRequest {
+  inputs: LabInputs;
+  /** UI language, e.g. "en". The explanation comes back in it. */
+  language: string;
+}
+
+export type Confidence = "low" | "medium" | "high";
+export type TestEnd = "extinction" | "completion" | "disruption";
+
+export interface NearestTest {
+  /** CIR test number, e.g. "205R001". */
+  cir_id?: string | null;
+  /** e.g. "FLEX-007": the key to its TestSheet. Null when the test has no published TestSheet. */
+  testsheet_id?: string | null;
+  /** The real outcome of that test: a TestEnd, or a value the frontend does not know yet. */
+  test_end?: string | null;
+  /** Standardized units, internal: used only for the order. */
+  distance?: number;
+}
+
+export interface TrainingSource {
+  dataset?: string;
+  accession?: string;
+  /** Never shown. */
+  sha256?: string;
+  rows?: number;
+}
+
+/** The k-NN fields each block carries (prediction_flow.md §5.3). */
+export interface Support {
   in_tested_range?: boolean;
   out_of_range_fields?: string[];
+  support_n?: number;
+  nearest_tests?: NearestTest[];
+  confidence?: Confidence;
   model_version?: string;
-  training_source?: string;
-  [output: string]: unknown;
+  training_source?: TrainingSource;
+}
+
+export type OutcomeClass = "extinction" | "no_extinction";
+
+export interface OutcomeBlock extends Support {
+  outcome: OutcomeClass;
+  probabilities?: Partial<Record<OutcomeClass, number>>;
+}
+
+/** Always computed, shown only when the outcome is extinction. */
+export interface ExtinctionBlock extends Support {
+  /** D_ext / D₀, 0..1. */
+  extinction_diameter_ratio?: number;
+  extinction_diameter_mm?: number;
+  /** 1 − ratio³, computed by engine. The frontend never computes it. */
+  fuel_burned_fraction?: number;
+}
+
+export interface CitedTest {
+  testsheet_id: string | null;
+  cir_id?: string | null;
+  investigation_url: string;
+}
+
+/** POST /mcp/lab/predict. `prediction` is engine's response, verbatim. */
+export interface LabPredictResponse {
+  prediction: { outcome: OutcomeBlock; extinction?: ExtinctionBlock };
+  /** Null when the LLM failed: the numbers still stand. Shown in the assistant dock (prompt 12). */
+  explanation?: string | null;
+  cited_tests?: CitedTest[];
+  /**
+   * Set by the sample adapter only: the inputs the fixture stands for (not the user's), and
+   * whether it is the model cards' reference case or a hand-made variant to show a state.
+   */
+  sample?: { inputs: LabInputs; reference: boolean };
 }
 
 /**

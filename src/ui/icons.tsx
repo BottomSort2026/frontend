@@ -40,6 +40,18 @@ export const Close = (p: IconProps) => (
     <path d="m4 4 8 8M12 4l-8 8" />
   </Icon16>
 );
+export const Check = (p: IconProps) => (
+  <Icon16 {...p}>
+    <path d="m3.5 8.5 3 3 6-7" />
+  </Icon16>
+);
+/** A warning: a triangle with an exclamation mark. */
+export const Alert = (p: IconProps) => (
+  <Icon16 {...p}>
+    <path d="M8 2.5 14 13H2Z" />
+    <path d="M8 6.5v3M8 11.25v.01" />
+  </Icon16>
+);
 
 function Icon28({ children, ...rest }: IconProps) {
   return (

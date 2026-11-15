@@ -13,6 +13,8 @@ The full system (tokens, eleven components with live previews, motion guide) is 
 
 One dark theme. Page `sky-900`, raised surfaces `sky-800`, hover and inputs `sky-700`, silhouettes `sky-950`. Text `ink`, secondary `ink-muted`, captions and units `ink-faint`. Decorative lines `sky-600`; any border that carries meaning `line-strong`. Text on an accent fill is `on-accent`, never white. States: `nominal`, `ember`, `hazard`, always with a word or icon. `soot`, `flame-core` and `milkyway` are canvas colours only.
 
+The Mission page may show a gravity scale. On it, 0 g (free fall) is `flame-blue` and 1 g (Earth) is `ember`; levels without data are hollow dashed marks in `line-strong`. This is the only place gravity is drawn: the Flame Lab still shows nothing about gravity.
+
 ## Type
 
 `--font-display` (Instrument Serif): wordmark, section headlines, star labels (italic). Never for paragraphs or under 20 px. `--font-sans` (IBM Plex Sans): reading text and buttons. `--font-mono` (IBM Plex Mono): every number, unit, label and coordinate. Labels are 12 px mono, uppercase, tracked.

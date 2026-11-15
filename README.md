@@ -2,13 +2,13 @@
 
 The web dashboard for _Flame in Freefall_ (NASA Space Apps 2026, team BottomSort). The home screen is the night sky of the Valle del Elqui: each star of the Southern Cross is a section, and choosing one flies the camera into it.
 
-| Star                        | Route             | View in `ARCHITECTURE.md` | Backend                                                 |
-| --------------------------- | ----------------- | ------------------------- | ------------------------------------------------------- |
-| Acrux, "Mission"            | `/mission`        | Information               | none (static)                                           |
-| Mimosa, "Investigations"    | `/investigations` | Information               | none: `src/data/investigations.json`, a file of the app |
-| Imai, "Library"             | `/library`        | Information               | `GET /profiles`                                         |
-| Gacrux, "Flame lab"         | `/flame-lab`      | Simulator                 | `GET /lab/model-info`, `POST /lab/predict`              |
-| the assistant, bottom right | (panel)           | Chatbot                   | `POST /chat`                                            |
+| Star                        | Route             | View in `ARCHITECTURE.md` | Backend                                                                                                                 |
+| --------------------------- | ----------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Acrux, "Mission"            | `/mission`        | Information               | none (static)                                                                                                           |
+| Mimosa, "Investigations"    | `/investigations` | Information               | none: `src/data/investigations.json`, a file of the app                                                                 |
+| Imai, "Library"             | `/library`        | Information               | `GET /profiles`                                                                                                         |
+| Gacrux, "Flame lab"         | `/flame-lab`      | Simulator                 | `GET /lab/model-info`, `POST /lab/predict`, `GET /datasets/flex-training.csv` (download link, hidden without a gateway) |
+| the assistant, bottom right | (panel)           | Chatbot                   | `POST /chat`                                                                                                            |
 
 It runs with no backend: with `VITE_API_URL` empty, every call is answered from sample data, and the interface labels it as sample.
 
@@ -35,7 +35,7 @@ VITE_API_URL=/
 GATEWAY_URL=http://localhost:3000   # 8080 under Compose
 ```
 
-The dev server forwards `/profiles`, `/chat` and `/mcp` to the gateway, so the browser stays same-origin as it is in production. These paths are reserved for the API: no page of the app may live under them (`/mcp` carries the Flame Lab).
+The dev server forwards `/profiles`, `/chat`, `/lab` and `/datasets` to the gateway, so the browser stays same-origin as it is in production. These paths are reserved for the API: no page of the app may live under them (`/lab` carries the Flame Lab, `/datasets` its training CSV).
 
 **Direct (cross-origin):**
 

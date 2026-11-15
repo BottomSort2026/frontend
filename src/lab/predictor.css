@@ -286,3 +286,12 @@
     text-decoration: underline;
   }
 }
+
+/* Training data download: the last block of the Lab, aligned left under the controls. */
+.ff-lab-data {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  max-width: 480px;
+}

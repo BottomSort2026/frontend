@@ -35,6 +35,12 @@ export const ArrowUp = (p: IconProps) => (
     <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" />
   </Icon16>
 );
+/** An arrow down onto a tray: saves a file. */
+export const Download = (p: IconProps) => (
+  <Icon16 {...p}>
+    <path d="M8 2.5v7.5M4.75 6.75 8 10l3.25-3.25M3 13h10" />
+  </Icon16>
+);
 export const Close = (p: IconProps) => (
   <Icon16 {...p}>
     <path d="m4 4 8 8M12 4l-8 8" />

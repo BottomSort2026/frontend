@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { hasBackend } from "../api/client";
+import { hasBackend, trainingDataUrl } from "../api/client";
 import { SAMPLE_FIXTURES, type SampleFixture } from "../api/mock";
 import { modelInfoQuery } from "../api/queries";
 import { Predictor } from "../lab/Predictor";
+import { TrainingData } from "../lab/TrainingData";
 import { Section, SectionBlock } from "../sections/Section";
 import { Tag } from "../ui/Tag";
 
@@ -34,6 +35,12 @@ function FlameLabPage() {
       <SectionBlock>
         <Predictor fixture={sample} />
       </SectionBlock>
+      {/* Only with a gateway: it is the one that serves the file. */}
+      {trainingDataUrl ? (
+        <SectionBlock>
+          <TrainingData href={trainingDataUrl} />
+        </SectionBlock>
+      ) : null}
     </Section>
   );
 }

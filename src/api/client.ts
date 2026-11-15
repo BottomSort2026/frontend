@@ -35,6 +35,14 @@ export const hasBackend = RAW.length > 0;
 // The Flame Lab routes: the gateway sends them to the MCP under the same path.
 export const LAB_MODEL_INFO_PATH = "/lab/model-info";
 export const LAB_PREDICT_PATH = "/lab/predict";
+// Answered by the gateway itself: a file kept in its repository, with no service behind it.
+export const TRAINING_DATA_PATH = "/datasets/flex-training.csv";
+
+/**
+ * Where the Flame Lab's training CSV downloads from. A plain link, not a fetch: the gateway sends
+ * it as an attachment and the browser saves it. Null without a gateway: there is nothing to serve.
+ */
+export const trainingDataUrl: string | null = hasBackend ? BASE + TRAINING_DATA_PATH : null;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {

@@ -4,6 +4,7 @@ import type { Citation } from "../api/types";
 import { Button } from "../ui/Button";
 import { ArrowUp, Close } from "../ui/icons";
 import { AssistantFace, type FaceCue } from "./AssistantFace";
+import "../ui/tag.css";
 import { citationHref, formatCitation } from "./citation";
 import type { AssistantStatus, ChatMessage } from "./useChat";
 

@@ -1,4 +1,4 @@
-// The copy of the report the app downloads: only the fields the Investigations view renders.
+// The copy of the report the app downloads: only the fields Investigations and Library render.
 // The build makes it from src/data/investigations.json (see vite.config.ts), which stays as the
 // team's tool wrote it. Every object is rebuilt field by field, so nothing the view does not read
 // is carried over, and a field added to the types in report.ts fails to compile until it is here.
@@ -89,14 +89,25 @@ const group = (g: HardwareGroup): HardwareGroup => ({
   differences: g.differences.map(linked),
 });
 
+/** The accessions the report lists as failed: they are shown in neither view. */
+export function failedAccessions(r: Pick<InvestigationsReport, "failed">): Set<string> {
+  const out = new Set<string>();
+  for (const f of r.failed ?? []) {
+    const accession = typeof f === "string" ? f : f?.accession;
+    if (accession) out.add(accession);
+  }
+  return out;
+}
+
 export function slimReport(r: InvestigationsReport): InvestigationsReport {
+  const failed = failedAccessions(r);
   return {
     run: { generated_at: r.run.generated_at, model: r.run.model },
     rubric: {
       max_score: r.rubric.max_score,
       criteria: r.rubric.criteria.map((c) => ({ key: c.key, weight: c.weight })),
     },
-    investigations: r.investigations.map(investigation),
+    investigations: r.investigations.filter((i) => !failed.has(i.accession)).map(investigation),
     habitat_top: mapValues(r.habitat_top, (top) => top.map((t) => ({ accession: t.accession }))),
     coverage: r.coverage,
     synthesis: {

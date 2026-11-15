@@ -9,12 +9,7 @@ import { api } from "./client";
 import type { SampleFixture } from "./mock";
 import type { LabInputs } from "./types";
 
-export const profilesQuery = queryOptions({
-  queryKey: ["profiles"],
-  queryFn: ({ signal }) => api.profiles(signal),
-  staleTime: Infinity, // built offline, static for the life of the page
-});
-
+/** The investigations report: read by Investigations and by Library, one download for both. */
 export const investigationsQuery = queryOptions({
   queryKey: ["investigations"],
   queryFn: ({ signal }) => api.investigations(signal),

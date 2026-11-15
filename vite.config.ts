@@ -6,15 +6,17 @@ import { slimReport } from "./src/investigations/slim";
 
 /**
  * Paths the gateway answers. `/lab` is the Flame Lab (docs/frontend_flame_lab.md §8); `/datasets`
- * is the Lab's training CSV, served by the gateway itself.
+ * is the Lab's training CSV, served by the gateway itself. The investigations report is a file of
+ * the app, not a gateway path.
  */
-const GATEWAY_PATHS = ["/profiles", "/chat", "/lab", "/datasets"];
+const GATEWAY_PATHS = ["/chat", "/lab", "/datasets"];
 
 const REPORT_ID = "virtual:investigations-url";
 
 /**
  * `import url from "virtual:investigations-url"` is the URL of the slim report: the generated
- * src/data/investigations.json with only the fields the view renders (src/investigations/slim.ts),
+ * src/data/investigations.json with only the fields Investigations and Library render
+ * (src/investigations/slim.ts),
  * minified. The build emits it as a hashed asset; the dev server serves it from memory and
  * rebuilds it when the report changes.
  */

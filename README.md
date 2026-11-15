@@ -6,11 +6,11 @@ The web dashboard for _Flame in Freefall_ (NASA Space Apps 2026, team BottomSort
 | --------------------------- | ----------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | Acrux, "Mission"            | `/mission`        | Information               | none (static)                                                                                                           |
 | Mimosa, "Investigations"    | `/investigations` | Information               | none: `src/data/investigations.json`, a file of the app                                                                 |
-| Imai, "Library"             | `/library`        | Information               | `GET /profiles`                                                                                                         |
+| Imai, "Library"             | `/library`        | Information               | none: the same `src/data/investigations.json` as Investigations                                                         |
 | Gacrux, "Flame lab"         | `/flame-lab`      | Simulator                 | `GET /lab/model-info`, `POST /lab/predict`, `GET /datasets/flex-training.csv` (download link, hidden without a gateway) |
 | the assistant, bottom right | (panel)           | Chatbot                   | `POST /chat`                                                                                                            |
 
-It runs with no backend: with `VITE_API_URL` empty, every call is answered from sample data, and the interface labels it as sample.
+It runs with no backend: with `VITE_API_URL` empty, the Flame Lab and the assistant answer from sample data, and the interface labels it as sample. Investigations and Library always show the real report, which ships with the app.
 
 ## Run it
 
@@ -35,7 +35,7 @@ VITE_API_URL=/
 GATEWAY_URL=http://localhost:3000   # 8080 under Compose
 ```
 
-The dev server forwards `/profiles`, `/chat`, `/lab` and `/datasets` to the gateway, so the browser stays same-origin as it is in production. These paths are reserved for the API: no page of the app may live under them (`/lab` carries the Flame Lab, `/datasets` its training CSV).
+The dev server forwards `/chat`, `/lab` and `/datasets` to the gateway, so the browser stays same-origin as it is in production. These paths are reserved for the API: no page of the app may live under them (`/lab` carries the Flame Lab, `/datasets` its training CSV).
 
 **Direct (cross-origin):**
 
@@ -49,7 +49,7 @@ The browser calls the gateway from `localhost:5173`, so the gateway must allow t
 
 - **Vite+** (`vp`): dev server, build, tests (Vitest), lint (Oxlint) and format (Oxfmt) from one `vite.config.ts`.
 - **React 19 + TypeScript**, plain CSS driven by design tokens (`src/styles/tokens.css`).
-- **TanStack Router**, file-based (`src/routes`), with search params for the library filters. **TanStack Query** for everything from the gateway.
+- **TanStack Router**, file-based (`src/routes`), with search params for the Investigations and Library filters. **TanStack Query** for everything from the gateway.
 - **Motion** for interface transitions and the travel value, **anime.js** for the load choreography, a hand-written **Canvas 2D** module for the stars, **BoopFace** for the assistant's face.
 
 ## Layout
@@ -60,8 +60,8 @@ src/
   sky/          SkyMap, NavStar, the star catalogue, layout math, the canvas, the travel state
   sections/     the shell every section shares (heading, staggered entrance)
   lab/          Predictor (inputs and Predict), LabResult (outputs), lab.ts (their logic), ParamSlider
-  library/      InvestigationCard and ranking
-  investigations/  the report's types and helpers, the accordion panel, the reference markers
+  library/      the catalogue: a report record as a card (card.ts), its filters, InvestigationCard
+  investigations/  the report's types and helpers (read by Investigations and Library), the accordion panel, the reference markers
   data/            investigations.json, the generated report (do not edit by hand)
   assistant/    AssistantProvider (one conversation for the app; the Lab adds its explanations), dock, chat panel, face, labMessage
   api/          types (the contract), client, queries, mock (sample data)
@@ -76,7 +76,9 @@ docs/prompts/   ready-to-send prompts for the next pieces of work
 
 **The Flame Lab shows only what the models predict.** The team's flow is `docs/frontend_flame_lab.md`: two models trained on the 274 FLEX tests (PSI-69, all in microgravity) say whether a droplet flame goes out and at what droplet size, and their k-NN shows the closest real tests. Gravity, airflow, flame shape and burning rate are not predicted, so the Lab does not show them. Its backend is the MCP: `GET /mcp/lab/model-info` and `POST /mcp/lab/predict` (§8 of that document; the names are proposed until the gateway owner confirms them). `Predictor` builds its controls from model-info and sends a request only when Predict is pressed. Without a backend, Predict answers with the model cards' reference case whatever the inputs, labelled "Sample output"; `/flame-lab?sample=no_extinction` (or `out_of_range`, `no_explanation`, `invalid`, `down`) shows the other states.
 
-**Sample data must say it is sample.** `api/mock.ts` flags its profiles and its model as `sample`, and the interface shows "Sample ranking" and "Sample output". Keep that when you add data.
+**Sample data must say it is sample.** `api/mock.ts` flags its model and its answers as `sample`, and the interface shows "Sample output". Keep that when you add data.
+
+**Investigations and Library read one report.** Both read the slim copy of `src/data/investigations.json` through `investigationsQuery`: one download, one cache entry, preloaded from the sky. Investigations is the ranking with every source; Library is the catalogue of profiles, filtered by habitat (the report's score for it is 2 or more out of 3) and by fuel, each card linking to its sourced entry in Investigations. `GET /profiles` is not used: `profiles.json` was never built. An investigation the report lists under `failed` is shown in neither view.
 
 ## Docker
 

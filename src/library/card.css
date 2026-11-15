@@ -11,19 +11,6 @@
     border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out);
 }
-.ff-card__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-.ff-card__rank {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--ink-muted);
-  font-variant-numeric: tabular-nums;
-}
 .ff-card__title {
   font-family: var(--font-display);
   font-size: 32px;
@@ -55,10 +42,32 @@
   color: var(--ink-muted);
   margin-top: calc(var(--space-2) * -1);
 }
-.ff-card__desc {
+/* The profile. Each value shows its first three lines; the whole text stays for screen readers,
+   and the card's entry in Investigations has it in full with its sources. */
+.ff-card__facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+.ff-card__fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ff-card__fact dd {
+  margin: 0;
   font-size: 14px;
   line-height: 22px;
   color: var(--ink-muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+.ff-card__fact dd.ff-card__missing {
+  color: var(--ink-faint);
 }
 .ff-card__tags {
   display: flex;
@@ -67,17 +76,37 @@
 }
 .ff-card__foot {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
+  flex-direction: column;
+  gap: var(--space-2);
   margin-top: auto;
   padding-top: var(--space-2);
+}
+.ff-card__links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+/* Sits above the title link's overlay, which covers the rest of the card. */
+.ff-card__sources {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  border-radius: var(--radius-sm);
 }
 .ff-meter {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1;
   max-width: 200px;
 }
 .ff-meter__bar {
@@ -118,5 +147,8 @@
   }
   .ff-card:hover .ff-card__go svg {
     transform: translate(2px, -2px);
+  }
+  .ff-card__sources:hover {
+    text-decoration-color: currentColor;
   }
 }

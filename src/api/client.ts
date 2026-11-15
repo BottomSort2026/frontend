@@ -6,8 +6,8 @@
 //   VITE_API_URL=http://host:port another origin
 
 // The investigations report ships with the app as its own file, fetched from the app's origin
-// with or without a gateway: a slim copy of src/data/investigations.json with only the fields the
-// view renders, made by the build (vite.config.ts, src/investigations/slim.ts).
+// with or without a gateway: a slim copy of src/data/investigations.json with only the fields
+// Investigations and Library render, made by the build (vite.config.ts, src/investigations/slim.ts).
 import investigationsUrl from "virtual:investigations-url";
 import type { InvestigationsReport } from "../investigations/report";
 import { uiLanguage } from "../lib/language";
@@ -16,13 +16,11 @@ import * as mock from "./mock";
 import type {
   ChatReply,
   ChatRequest,
-  InvestigationProfile,
   LabInputs,
   LabModelInfo,
   LabPredictRequest,
   LabPredictResponse,
   ModelInput,
-  ProfileList,
 } from "./types";
 
 const RAW: string = import.meta.env.VITE_API_URL ?? "";
@@ -93,24 +91,9 @@ export function normalizeModelInfo(raw: unknown): LabModelInfo {
 
 export const api = {
   /**
-   * profiles.json may be a bare array or wrapped in { profiles }: its hosting is still open.
-   * While it is not built (the gateway answers 404), the built-in sample set is served, labelled
-   * as a sample.
+   * The generated report behind Investigations and Library. Not a gateway route: a file of the
+   * app, so both views show real data with or without a backend.
    */
-  async profiles(signal?: AbortSignal): Promise<ProfileList> {
-    if (!hasBackend) return mock.getProfiles();
-    try {
-      const data = await request<InvestigationProfile[] | { profiles: InvestigationProfile[] }>(
-        "/profiles",
-        { signal },
-      );
-      return { profiles: Array.isArray(data) ? data : data.profiles, sample: false };
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) return mock.getProfiles();
-      throw e;
-    }
-  },
-  /** The generated report behind the Investigations view. Not a gateway route: a file of the app. */
   async investigations(signal?: AbortSignal): Promise<InvestigationsReport> {
     const res = await fetch(investigationsUrl, { signal, headers: { Accept: "application/json" } });
     if (!res.ok)

@@ -1,6 +1,7 @@
-// Sample data so the frontend runs before the services exist. Facts come from the challenge
-// brief and ARCHITECTURE.md; scores and predictions are placeholders and are flagged `sample`,
-// so the interface can say so.
+// Sample data so the Flame Lab and the assistant run before the services exist. Facts come from
+// the challenge brief and ARCHITECTURE.md; predictions are placeholders and are flagged `sample`,
+// so the interface can say so. Investigations and Library never use sample data: they read the
+// bundled report.
 
 import { ApiError } from "./errors";
 import {
@@ -14,91 +15,9 @@ import {
   type LabPredictResponse,
   type NearestTest,
   type OutcomeBlock,
-  type ProfileList,
 } from "./types";
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-const PROFILES: ProfileList = {
-  sample: true,
-  profiles: [
-    {
-      accession: "PSI-25",
-      acronym: "BASS-II",
-      title: "Burning and Suppression of Solids II",
-      pillar: ["prevention", "suppression"],
-      hardware: "MSG, SPICE flow duct",
-      fuel_type: "solid",
-      fuels: ["PMMA", "SIBAL", "Nomex"],
-      variables: ["material", "thickness", "flow speed", "O₂"],
-      habitat_relevance: { spacecraft: 3, station: 3, moon_base: 3, rover: 2 },
-      key_findings: ["129 tests of how solid materials burn and go out in a low-speed flow duct."],
-    },
-    {
-      accession: "PSI-98",
-      acronym: "SAFFIRE-I",
-      title: "Spacecraft Fire Safety Demonstration",
-      pillar: ["prevention"],
-      hardware: "Uncrewed Cygnus vehicle",
-      fuel_type: "solid",
-      habitat_relevance: { spacecraft: 3, station: 3, moon_base: 2, rover: 2 },
-      key_findings: [
-        "Large-scale fire on an uncrewed vehicle: flammability of solid materials at real scale.",
-      ],
-    },
-    {
-      accession: "PSI-69",
-      acronym: "FLEX",
-      title: "Flame Extinguishment Experiment",
-      pillar: ["suppression"],
-      hardware: "MDCA in the CIR",
-      fuel_type: "liquid droplet",
-      fuels: ["methanol", "heptane"],
-      o2_range: [0.12, 0.34],
-      pressure_range_atm: [0.69, 3.05],
-      variables: ["fuel", "pressure", "O₂", "diluent (N₂, CO₂, He)", "droplet diameter"],
-      habitat_relevance: { spacecraft: 2, station: 3, moon_base: 3, rover: 2 },
-      key_findings: [
-        "274 droplet tests of flame extinction while the atmosphere is diluted with carbon dioxide or helium.",
-      ],
-    },
-    {
-      accession: "PSI-102",
-      acronym: "SAME",
-      title: "Smoke and Aerosol Measurement Experiment",
-      pillar: ["detection"],
-      fuel_type: "smoke and aerosol",
-      habitat_relevance: { spacecraft: 3, station: 3, moon_base: 2, rover: 3 },
-      key_findings: [
-        "Smoke particle measurements in microgravity, the basis for spacecraft smoke detectors.",
-      ],
-    },
-    {
-      accession: "PSI-20",
-      acronym: "ACME-BRE",
-      title: "Burning Rate Emulator",
-      pillar: ["prevention"],
-      hardware: "ACME modules in the CIR",
-      fuel_type: "gas",
-      habitat_relevance: { spacecraft: 2, station: 2, moon_base: 2, rover: 1 },
-      key_findings: [
-        "Gaseous fuel standing in for condensed materials: flammability in still air as a function of material properties.",
-      ],
-    },
-    {
-      accession: "PSI-107",
-      acronym: "SPICE",
-      title: "Smoke Point In Co-flow Experiment",
-      pillar: ["detection", "prevention"],
-      hardware: "MSG, SPICE flow duct",
-      fuel_type: "gas",
-      habitat_relevance: { spacecraft: 1, station: 2, moon_base: 1, rover: 1 },
-      key_findings: [
-        "Smoke point of gas-jet flames in a co-flow of air: when a flame starts to release soot.",
-      ],
-    },
-  ],
-};
 
 // Flame Lab. Ranges are the rounded ones of prediction_flow.md §5.1; the real ones come from
 // GET /lab/model-info. Predictions are fixtures built from the model cards' reference query
@@ -329,11 +248,6 @@ const ANSWERS: { q: string; reply: ChatReply }[] = [
 ];
 
 export const SUGGESTIONS: readonly string[] = ANSWERS.map((a) => a.q);
-
-export async function getProfiles(): Promise<ProfileList> {
-  await wait(120);
-  return PROFILES;
-}
 
 export async function getLabModelInfo(): Promise<LabModelInfo> {
   await wait(80);

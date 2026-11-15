@@ -1,38 +1,31 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { profilesQuery, warmQuery } from "../api/queries";
+import { useMemo } from "react";
+import { investigationsQuery, warmQuery } from "../api/queries";
 import type { Habitat } from "../api/types";
-import { fuelGlyph, HABITAT_LABEL, InvestigationCard, rankFor } from "../library/InvestigationCard";
+import { HABITATS, HABITAT_NAME } from "../investigations/report";
+import { FUEL_NAME, filterCards, RELEVANT_SCORE, toCard } from "../library/card";
+import { InvestigationCard } from "../library/InvestigationCard";
 import { Section, SectionBlock } from "../sections/Section";
-import { FilterTag, Tag, type TagGlyph } from "../ui/Tag";
+import { FilterTag, type TagGlyph } from "../ui/Tag";
 
-const HABITATS = [
-  "station",
-  "spacecraft",
-  "moon_base",
-  "rover",
-] as const satisfies readonly Habitat[];
 const FUELS = ["solid", "liquid", "gas"] as const satisfies readonly TagGlyph[];
-const FUEL_NAME: Record<TagGlyph, string> = {
-  solid: "Solid",
-  liquid: "Liquid droplet",
-  gas: "Gas",
-};
 
 interface LibrarySearch {
-  /** Rank for this habitat. Default: station. */
+  /** Keep the investigations relevant to this habitat. Default: every habitat. */
   habitat?: Habitat;
   fuel?: TagGlyph;
 }
 
 export const Route = createFileRoute("/library")({
-  // Filters live in the URL, so a ranked view can be shared as a link.
+  // Filters live in the URL, so a filtered view can be shared as a link.
   validateSearch: (search: Record<string, unknown>): LibrarySearch => ({
     habitat: HABITATS.find((h) => h === search.habitat),
     fuel: FUELS.find((f) => f === search.fuel),
   }),
-  // Starts the request without waiting for it: the section opens at once.
-  loader: ({ context }) => void warmQuery(context.queryClient, profilesQuery),
+  // The same report and query as Investigations: usually already in the cache (the sky preloads
+  // it). Starts the download without waiting for it, so the section opens at once.
+  loader: ({ context }) => void warmQuery(context.queryClient, investigationsQuery),
   component: LibraryPage,
 });
 
@@ -40,34 +33,36 @@ function LibraryPage() {
   return (
     <Section
       id="library"
-      title="Every experiment, ranked for fire safety."
-      lead="Investigations from NASA's Physical Sciences Informatics repository, summarised and ordered by how directly they inform the habitat you choose."
-      loading="Loading the investigation profiles…"
-      failed="The investigation profiles did not load."
+      title="Every experiment, at a glance."
+      lead="What each investigation in NASA's Physical Sciences Informatics repository burned, in which hardware, at which oxygen, pressure and airflow, and what it measured. Filter by habitat and fuel; the ranking is in Investigations."
+      loading="Loading the investigations…"
+      failed="The investigations did not load."
     >
       <LibraryContent />
     </Section>
   );
 }
 
-/** Everything that reads the profiles. It suspends until they are there. */
+/** Everything that reads the report. It suspends until the report is there. */
 function LibraryContent() {
-  const { habitat = "station", fuel } = Route.useSearch();
+  const { habitat, fuel } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data } = useSuspenseQuery(profilesQuery);
+  const { data: report } = useSuspenseQuery(investigationsQuery);
+  const cards = useMemo(() => report.investigations.map(toCard), [report]);
+  const shown = filterCards(cards, { habitat, fuel });
   const setSearch = (next: LibrarySearch) =>
     void navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
-
-  const ranked = rankFor(data.profiles, habitat);
-  const shown = fuel ? ranked.filter((p) => fuelGlyph(p.fuel_type) === fuel) : ranked;
 
   return (
     <>
       <SectionBlock className="ff-sec__row">
-        <span role="group" aria-label="Rank for habitat" className="ff-sec__row">
+        <span role="group" aria-label="Filter by habitat" className="ff-sec__row">
+          <FilterTag pressed={!habitat} onPress={() => setSearch({ habitat: undefined })}>
+            All habitats
+          </FilterTag>
           {HABITATS.map((h) => (
             <FilterTag key={h} pressed={habitat === h} onPress={() => setSearch({ habitat: h })}>
-              {HABITAT_LABEL[h]}
+              {HABITAT_NAME[h]}
             </FilterTag>
           ))}
         </span>
@@ -88,22 +83,23 @@ function LibraryContent() {
             </FilterTag>
           ))}
         </span>
-        {data.sample ? <Tag variant="gap">Sample ranking</Tag> : null}
+      </SectionBlock>
+      <SectionBlock>
+        <p className="ff-note" aria-live="polite">
+          {shown.length} of {cards.length} investigations
+          {habitat
+            ? `, those the report scores ${RELEVANT_SCORE} or more out of 3 for ${HABITAT_NAME[habitat]}`
+            : ""}
+          .
+        </p>
       </SectionBlock>
       <SectionBlock className="ff-grid">
         {shown.length > 0 ? (
-          shown.map((p) => (
-            <InvestigationCard
-              key={p.accession}
-              profile={p}
-              rank={ranked.indexOf(p) + 1}
-              habitat={habitat}
-            />
+          shown.map((card) => (
+            <InvestigationCard key={card.accession} card={card} habitat={habitat} />
           ))
         ) : (
-          <p className="ff-note">
-            No investigation burns that kind of fuel. Choose another filter.
-          </p>
+          <p className="ff-note">No investigation matches both filters. Choose another one.</p>
         )}
       </SectionBlock>
     </>

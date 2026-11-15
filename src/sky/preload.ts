@@ -4,8 +4,8 @@ import { starById, type StarDef } from "./stars";
 
 /**
  * Loads a section ahead of the trip: its route code, and through the route's loader its data
- * (the Investigations report and the Library profiles go into the query cache under the keys the
- * sections read). Calling it again is cheap: loaded code and fresh data are not fetched twice.
+ * (the investigations report, read by both Investigations and Library, goes into the query cache
+ * under the key they read). Calling it again is cheap: loaded code and fresh data are not fetched twice.
  * A failure is ignored here; the section shows its own error state when it opens.
  */
 export function useSectionPreload(): (star: StarDef) => void {

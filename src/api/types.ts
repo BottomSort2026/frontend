@@ -2,45 +2,15 @@
 // docs/frontend_flame_lab.md §8 for the Flame Lab: the routes and shapes below are the ones the
 // gateway, the MCP and the engine implement.
 //
-//   GET  /profiles         static investigation profiles (Information view)
 //   GET  /lab/model-info   the models describing their own inputs (Flame Lab)
 //   POST /lab/predict      one prediction plus its explanation (Flame Lab)
 //   POST /chat             the agent (Chatbot)
 //
-// Everything stays tolerant of missing optional fields. Where profiles.json is hosted is still open.
+// Everything stays tolerant of missing optional fields. The Information views (Investigations
+// and Library) read no gateway route: they read the bundled report, src/investigations/report.ts.
 
 export type Pillar = "prevention" | "detection" | "suppression";
 export type Habitat = "spacecraft" | "station" | "moon_base" | "rover";
-type Range = [number, number] | null;
-
-/** One entry of profiles.json. Only accession and acronym are assumed to be present. */
-export interface InvestigationProfile {
-  /** PSI accession, e.g. "PSI-25". */
-  accession: string;
-  acronym: string;
-  title?: string;
-  pillar?: Pillar[];
-  hardware?: string;
-  fuel_type?: string;
-  fuels?: string[];
-  sample_geometry?: string;
-  o2_range?: Range;
-  pressure_range_atm?: Range;
-  airflow_cm_s?: Range;
-  variables?: string[];
-  constants?: string[];
-  sensors?: string[];
-  /** 0 to 3 per habitat. */
-  habitat_relevance?: Partial<Record<Habitat, number>>;
-  key_findings?: string[];
-  citations?: string[];
-}
-
-export interface ProfileList {
-  profiles: InvestigationProfile[];
-  /** True while this is the built-in sample set and not the reviewed profiles.json. */
-  sample: boolean;
-}
 
 export type ModelInput =
   | { type: "enum"; values: string[]; label?: string; default?: string }

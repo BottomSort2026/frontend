@@ -19,10 +19,22 @@ export function rgba(c: Rgb, a: number): string {
   return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 }
 
-/** A duration token ("260ms") in seconds, as Motion expects. */
+/**
+ * A CSS time in seconds, or null if it is not one. Both units count: the source tokens are in
+ * milliseconds ("260ms"), but the production CSS minifier rewrites them in seconds (".26s").
+ * A bare number ("9") is not a CSS time.
+ */
+export function parseDuration(value: string): number | null {
+  const m = /^([+-]?(?:\d+\.?\d*|\.\d+))(ms|s)$/i.exec(value.trim());
+  if (!m) return null;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n)) return null;
+  return m[2]!.toLowerCase() === "ms" ? n / 1000 : n;
+}
+
+/** A duration token in seconds, as Motion expects. */
 export function dur(name: string, fallbackMs: number): number {
-  const v = parseFloat(tok(name));
-  return (Number.isFinite(v) ? v : fallbackMs) / 1000;
+  return parseDuration(tok(name)) ?? fallbackMs / 1000;
 }
 
 /** An easing token ("cubic-bezier(...)") as the four numbers Motion expects. */

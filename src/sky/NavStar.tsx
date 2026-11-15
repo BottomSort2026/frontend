@@ -10,11 +10,13 @@ interface NavStarProps {
   stack: boolean;
   index: number;
   onSelect: (star: StarDef) => void;
+  /** Pointer over or focus on the star: the person may be about to choose it. */
+  onIntent?: (star: StarDef) => void;
   ref?: Ref<HTMLButtonElement>;
 }
 
 /** A destination star: a real button with a 48px body around a 9px core. */
-export function NavStar({ star, position, stack, index, onSelect, ref }: NavStarProps) {
+export function NavStar({ star, position, stack, index, onSelect, onIntent, ref }: NavStarProps) {
   const cls = [
     "ff-star",
     star.warm && "ff-star--warm",
@@ -34,6 +36,8 @@ export function NavStar({ star, position, stack, index, onSelect, ref }: NavStar
         "--delay": `${-index * 1.3}s`,
       }}
       onClick={() => onSelect(star)}
+      onPointerEnter={() => onIntent?.(star)}
+      onFocus={() => onIntent?.(star)}
     >
       <span className="ff-star__body">
         <span className="ff-star__halo" />

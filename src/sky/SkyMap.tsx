@@ -3,6 +3,7 @@ import { motion, useMotionValueEvent, useReducedMotion, useTransform } from "mot
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { clamp01, tok } from "../lib/tokens";
 import { NavStar, PlainStarMark } from "./NavStar";
+import { usePreloadInvestigationsWhenIdle, useSectionPreload } from "./preload";
 import { layoutSky, reach, type SkyGeometry } from "./projection";
 import { createSky, type Sky } from "./skyCanvas";
 import { LINES, PLAIN_STARS, STARS, type SectionId } from "./stars";
@@ -146,6 +147,12 @@ export function SkyMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geo === null]);
 
+  // Once the intro has played, load the Investigations report while nobody is looking: it is the
+  // one download large enough to make a trip wait. Pointing at or focusing any star loads its
+  // section.
+  usePreloadInvestigationsWhenIdle(intro === "done");
+  const preload = useSectionPreload();
+
   // Back in the sky after a trip: return focus to the star we left from.
   const previous = useRef(phase);
   useEffect(() => {
@@ -232,6 +239,7 @@ export function SkyMap() {
                 position={geo.stars[star.id]}
                 stack={geo.stack}
                 onSelect={go}
+                onIntent={preload}
                 ref={(el) => {
                   starEls.current[star.id] = el;
                 }}

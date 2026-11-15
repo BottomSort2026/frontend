@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { hasBackend, trainingDataUrl } from "../api/client";
 import { SAMPLE_FIXTURES, type SampleFixture } from "../api/mock";
-import { modelInfoQuery } from "../api/queries";
+import { modelInfoQuery, warmQuery } from "../api/queries";
 import { Predictor } from "../lab/Predictor";
 import { TrainingData } from "../lab/TrainingData";
 import { Section, SectionBlock } from "../sections/Section";
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/flame-lab")({
     sample: hasBackend ? undefined : SAMPLE_FIXTURES.find((f) => f === search.sample),
   }),
   // Warm the model description so the controls are ready on arrival. Never blocks the page.
-  loader: ({ context }) => void context.queryClient.prefetchQuery(modelInfoQuery),
+  loader: ({ context }) => void warmQuery(context.queryClient, modelInfoQuery),
   component: FlameLabPage,
 });
 

@@ -27,7 +27,7 @@ export function motionTokens(): MotionTokens {
       base: dur("--dur-base", 260),
       slow: dur("--dur-slow", 420),
       travel: dur("--dur-travel", 900),
-      travelBack: 0.8,
+      travelBack: dur("--dur-travel-back", 800),
       out: ease("--ease-out", [0.23, 1, 0.32, 1]),
       inOut: ease("--ease-in-out", [0.77, 0, 0.175, 1]),
       travelEase,

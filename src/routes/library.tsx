@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { profilesQuery } from "../api/queries";
+import { profilesQuery, warmQuery } from "../api/queries";
 import type { Habitat } from "../api/types";
 import { fuelGlyph, HABITAT_LABEL, InvestigationCard, rankFor } from "../library/InvestigationCard";
 import { Section, SectionBlock } from "../sections/Section";
@@ -31,11 +31,27 @@ export const Route = createFileRoute("/library")({
     habitat: HABITATS.find((h) => h === search.habitat),
     fuel: FUELS.find((f) => f === search.fuel),
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(profilesQuery),
+  // Starts the request without waiting for it: the section opens at once.
+  loader: ({ context }) => void warmQuery(context.queryClient, profilesQuery),
   component: LibraryPage,
 });
 
 function LibraryPage() {
+  return (
+    <Section
+      id="library"
+      title="Every experiment, ranked for fire safety."
+      lead="Investigations from NASA's Physical Sciences Informatics repository, summarised and ordered by how directly they inform the habitat you choose."
+      loading="Loading the investigation profiles…"
+      failed="The investigation profiles did not load."
+    >
+      <LibraryContent />
+    </Section>
+  );
+}
+
+/** Everything that reads the profiles. It suspends until they are there. */
+function LibraryContent() {
   const { habitat = "station", fuel } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data } = useSuspenseQuery(profilesQuery);
@@ -46,11 +62,7 @@ function LibraryPage() {
   const shown = fuel ? ranked.filter((p) => fuelGlyph(p.fuel_type) === fuel) : ranked;
 
   return (
-    <Section
-      id="library"
-      title="Every experiment, ranked for fire safety."
-      lead="Investigations from NASA's Physical Sciences Informatics repository, summarised and ordered by how directly they inform the habitat you choose."
-    >
+    <>
       <SectionBlock className="ff-sec__row">
         <span role="group" aria-label="Rank for habitat" className="ff-sec__row">
           {HABITATS.map((h) => (
@@ -94,6 +106,6 @@ function LibraryPage() {
           </p>
         )}
       </SectionBlock>
-    </Section>
+    </>
   );
 }

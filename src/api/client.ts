@@ -5,9 +5,10 @@
 //   VITE_API_URL=/                same origin, behind the gateway (and through the dev proxy)
 //   VITE_API_URL=http://host:port another origin
 
-// The investigations report ships with the app as its own file: fetched only when the
-// Investigations view opens, from the app's origin, with or without a gateway.
-import investigationsUrl from "../data/investigations.json?url";
+// The investigations report ships with the app as its own file, fetched from the app's origin
+// with or without a gateway: a slim copy of src/data/investigations.json with only the fields the
+// view renders, made by the build (vite.config.ts, src/investigations/slim.ts).
+import investigationsUrl from "virtual:investigations-url";
 import type { InvestigationsReport } from "../investigations/report";
 import { uiLanguage } from "../lib/language";
 import { ApiError } from "./errors";

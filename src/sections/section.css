@@ -67,6 +67,20 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+/* Waiting for the content, or why it is not there: the Flame Lab's empty state, section-wide. */
+.ff-sec__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 22px;
+}
 .ff-facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -50,22 +50,41 @@ const post = (body: unknown, signal?: AbortSignal): RequestInit => ({
   signal,
 });
 
+/** Routes the backend has not built yet (engine has no /model-info, its /predict is a
+    placeholder with another body, no profiles.json is hosted): serve the built-in sample
+    data instead of an error, until those endpoints are real. */
+async function requestOrMock<T>(
+  path: string,
+  mockValue: () => Promise<T>,
+  init?: RequestInit,
+): Promise<T> {
+  try {
+    return await request<T>(path, init);
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 404 || e.status === 422)) return mockValue();
+    throw e;
+  }
+}
+
 export const api = {
   /** profiles.json may be a bare array or wrapped in { profiles }: its hosting is still OPEN. */
   async profiles(signal?: AbortSignal): Promise<ProfileList> {
     if (!hasBackend) return mock.getProfiles();
-    const data = await request<InvestigationProfile[] | { profiles: InvestigationProfile[] }>(
+    const data = await requestOrMock<InvestigationProfile[] | { profiles: InvestigationProfile[] }>(
       "/profiles",
+      () => mock.getProfiles(),
       { signal },
     );
     return { profiles: Array.isArray(data) ? data : data.profiles, sample: false };
   },
   modelInfo(signal?: AbortSignal): Promise<ModelInfo> {
-    return hasBackend ? request<ModelInfo>("/ml/model-info", { signal }) : mock.getModelInfo();
+    return hasBackend
+      ? requestOrMock("/ml/model-info", () => mock.getModelInfo(), { signal })
+      : mock.getModelInfo();
   },
   predict(body: PredictRequest, signal?: AbortSignal): Promise<PredictResponse> {
     return hasBackend
-      ? request<PredictResponse>("/ml/predict", post(body, signal))
+      ? requestOrMock("/ml/predict", () => mock.predict(body), post(body, signal))
       : mock.predict(body);
   },
   chat(body: ChatRequest): Promise<ChatReply> {

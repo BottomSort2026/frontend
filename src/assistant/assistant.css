@@ -207,6 +207,53 @@
   display: flex;
   flex-direction: column;
 }
+/* Markdown answers: keep headings, lists, code and links in the message scale. */
+.ff-md > :first-child {
+  margin-top: 0;
+}
+.ff-md > :last-child {
+  margin-bottom: 0;
+}
+.ff-md p,
+.ff-md ul,
+.ff-md ol,
+.ff-md h1,
+.ff-md h2,
+.ff-md h3,
+.ff-md h4 {
+  margin: var(--space-2) 0;
+}
+.ff-md h1,
+.ff-md h2,
+.ff-md h3,
+.ff-md h4 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.ff-md ul,
+.ff-md ol {
+  padding-left: 20px;
+}
+.ff-md code {
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm, 4px);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.ff-md pre {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm, 4px);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  overflow-x: auto;
+}
+.ff-md pre code {
+  padding: 0;
+  background: none;
+}
+.ff-md a {
+  color: var(--sky-600);
+}
 /* One citation per row: pill, then the document title and year, cut with an ellipsis. */
 .ff-cite,
 .ff-cite__visible {

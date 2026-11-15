@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Markdown from "react-markdown";
 import type { Citation } from "../api/types";
 import { Button } from "../ui/Button";
 import { ArrowUp, Close } from "../ui/icons";
@@ -64,6 +65,16 @@ function CitationRow({ citation: c }: { citation: Citation }) {
       </span>
       <span className="ff-cite__sr">{label}</span>
     </span>
+  );
+}
+
+/** Assistant answers arrive as markdown; user text and errors stay plain. */
+function MessageBody({ role, error, text }: { role: string; error?: boolean; text: string }) {
+  if (role === "user" || error) return <p>{text}</p>;
+  return (
+    <div className="ff-md">
+      <Markdown>{text}</Markdown>
+    </div>
   );
 }
 
@@ -160,13 +171,7 @@ export function ChatPanel({
             role={m.lab ? "article" : undefined}
             className={`ff-msg${m.role === "user" ? " ff-msg--user" : ""}${m.error ? " ff-msg--error" : ""}${m.lab ? " ff-msg--lab" : ""}`}
           >
-            {m.lab ? (
-              <>
-                <p className="ff-eyebrow ff-msg__eyebrow">Flame Lab prediction</p>
-                <p className="ff-msg__cond">{m.lab.conditions}</p>
-              </>
-            ) : null}
-            <p>{m.text}</p>
+            <MessageBody role={m.role} error={m.error} text={m.text} />
             {m.citations && m.citations.length > 0 ? (
               <div className="ff-msg__src">
                 {m.citations.map((c, i) => (

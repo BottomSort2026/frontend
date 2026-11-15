@@ -18,7 +18,8 @@
     "boopface": "0.8.0",
     "motion": "^14",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@tanstack/router-plugin": "^1",

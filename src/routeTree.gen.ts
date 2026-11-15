@@ -10,8 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as FireSafetyRouteImport } from './routes/fire-safety'
 import { Route as FlameLabRouteImport } from './routes/flame-lab'
+import { Route as InvestigationsRouteImport } from './routes/investigations'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as MissionRouteImport } from './routes/mission'
 
@@ -20,14 +20,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FireSafetyRoute = FireSafetyRouteImport.update({
-  id: '/fire-safety',
-  path: '/fire-safety',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FlameLabRoute = FlameLabRouteImport.update({
   id: '/flame-lab',
   path: '/flame-lab',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvestigationsRoute = InvestigationsRouteImport.update({
+  id: '/investigations',
+  path: '/investigations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -43,38 +43,44 @@ const MissionRoute = MissionRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/fire-safety': typeof FireSafetyRoute
   '/flame-lab': typeof FlameLabRoute
+  '/investigations': typeof InvestigationsRoute
   '/library': typeof LibraryRoute
   '/mission': typeof MissionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/fire-safety': typeof FireSafetyRoute
   '/flame-lab': typeof FlameLabRoute
+  '/investigations': typeof InvestigationsRoute
   '/library': typeof LibraryRoute
   '/mission': typeof MissionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/fire-safety': typeof FireSafetyRoute
   '/flame-lab': typeof FlameLabRoute
+  '/investigations': typeof InvestigationsRoute
   '/library': typeof LibraryRoute
   '/mission': typeof MissionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/fire-safety' | '/flame-lab' | '/library' | '/mission'
+  fullPaths: '/' | '/flame-lab' | '/investigations' | '/library' | '/mission'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/fire-safety' | '/flame-lab' | '/library' | '/mission'
-  id: '__root__' | '/' | '/fire-safety' | '/flame-lab' | '/library' | '/mission'
+  to: '/' | '/flame-lab' | '/investigations' | '/library' | '/mission'
+  id:
+    | '__root__'
+    | '/'
+    | '/flame-lab'
+    | '/investigations'
+    | '/library'
+    | '/mission'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  FireSafetyRoute: typeof FireSafetyRoute
   FlameLabRoute: typeof FlameLabRoute
+  InvestigationsRoute: typeof InvestigationsRoute
   LibraryRoute: typeof LibraryRoute
   MissionRoute: typeof MissionRoute
 }
@@ -88,18 +94,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/fire-safety': {
-      id: '/fire-safety'
-      path: '/fire-safety'
-      fullPath: '/fire-safety'
-      preLoaderRoute: typeof FireSafetyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/flame-lab': {
       id: '/flame-lab'
       path: '/flame-lab'
       fullPath: '/flame-lab'
       preLoaderRoute: typeof FlameLabRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/investigations': {
+      id: '/investigations'
+      path: '/investigations'
+      fullPath: '/investigations'
+      preLoaderRoute: typeof InvestigationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library': {
@@ -121,8 +127,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  FireSafetyRoute: FireSafetyRoute,
   FlameLabRoute: FlameLabRoute,
+  InvestigationsRoute: InvestigationsRoute,
   LibraryRoute: LibraryRoute,
   MissionRoute: MissionRoute,
 }

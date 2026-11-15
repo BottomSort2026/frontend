@@ -19,6 +19,7 @@ import {
   rangeWording,
   sourceLine,
   supportSentence,
+  testConditions,
   type TagTone,
 } from "./lab";
 
@@ -39,7 +40,8 @@ function StateTag({ text, tone }: { text: string; tone: TagTone }) {
 }
 
 /** The k-NN behind one block (§6.3): how many real tests back it and how far it reaches. */
-function Support({ block }: { block: SupportFields }) {
+function Support({ block }: { block: SupportFields | undefined }) {
+  if (!block) return null;
   const confidence = confidenceWording(block.confidence);
   const range = rangeWording(block.in_tested_range);
   const sentence = supportSentence(block.support_n);
@@ -70,16 +72,15 @@ function Outcome({
   onReadExplanation?: () => void;
 }) {
   const id = useId();
-  const probs = block.probabilities ?? {};
+  const { label } = block.prediction;
+  const probs = block.prediction.probabilities ?? {};
   return (
     <section className="ff-lab-panel" aria-labelledby={`${id}-h`}>
       <p className="ff-eyebrow" id={`${id}-h`}>
         Outcome
       </p>
       <div className="ff-lab-verdict-row">
-        <p className="ff-lab-verdict">
-          {OUTCOME_VERDICT[block.outcome] ?? humanize(block.outcome).label}
-        </p>
+        <p className="ff-lab-verdict">{OUTCOME_VERDICT[label] ?? humanize(label).label}</p>
         {onReadExplanation ? (
           <Button variant="secondary" onClick={onReadExplanation}>
             Read the explanation
@@ -92,7 +93,7 @@ function Outcome({
           if (typeof p !== "number") return null;
           const v = pct(p);
           return (
-            <div className="ff-meter" key={cls} data-predicted={cls === block.outcome}>
+            <div className="ff-meter" key={cls} data-predicted={cls === label}>
               <span id={`${id}-${cls}`}>{OUTCOME_ROW[cls]}</span>
               <div
                 className="ff-meter__bar"
@@ -110,7 +111,7 @@ function Outcome({
           );
         })}
       </div>
-      <Support block={block} />
+      <Support block={block.support} />
     </section>
   );
 }
@@ -153,8 +154,8 @@ function Droplet({
   sample: boolean;
 }) {
   const id = useId();
-  const dExt = block.extinction_diameter_mm;
-  const burned = block.fuel_burned_fraction;
+  const dExt = block.prediction?.extinction_diameter_mm;
+  const burned = block.prediction?.fuel_burned_fraction;
   const canDraw = typeof d0 === "number" && typeof dExt === "number" && d0 > 0;
   return (
     <section className="ff-lab-panel" aria-labelledby={id}>
@@ -182,7 +183,7 @@ function Droplet({
           ) : null}
         </div>
       </div>
-      <Support block={block} />
+      <Support block={block.support} />
     </section>
   );
 }
@@ -197,13 +198,17 @@ function Nearest({ prediction }: { prediction: LabPredictResponse["prediction"] 
         Closest real tests
       </p>
       <ol className="ff-nearest">
-        {tests.map((t, i) => (
-          <li key={t.testsheet_id ?? t.cir_id ?? i}>
-            <span className="ff-nearest__id">{t.testsheet_id ?? "No TestSheet"}</span>
-            {t.cir_id ? <span className="ff-nearest__cir">{t.cir_id}</span> : null}
-            <span className="ff-nearest__end">{testEndLabel(t.test_end)}</span>
-          </li>
-        ))}
+        {tests.map((t, i) => {
+          const conditions = testConditions(t);
+          return (
+            <li key={t.testsheet_id ?? t.cir_id ?? i}>
+              <span className="ff-nearest__id">{t.testsheet_id ?? "No TestSheet"}</span>
+              {t.cir_id ? <span className="ff-nearest__cir">{t.cir_id}</span> : null}
+              <span className="ff-nearest__end">{testEndLabel(t.test_end)}</span>
+              {conditions ? <span className="ff-nearest__conditions">{conditions}</span> : null}
+            </li>
+          );
+        })}
       </ol>
       <a className="ff-lab-link" href={investigationUrl(FLEX)} target="_blank" rel="noreferrer">
         FLEX on PSI ({FLEX})
@@ -234,7 +239,7 @@ export function LabResult({
   const d0 = typeof d0Raw === "number" ? d0Raw : undefined;
   const d0Input = model.inputs[D0_FIELD];
   const maxD0 = d0Input?.type === "float" ? d0Input.max : undefined;
-  const extinct = prediction.outcome.outcome === "extinction";
+  const extinct = prediction.outcome.prediction.label === "extinction";
   return (
     <div className={`ff-lab-result${stale ? " ff-lab-result--stale" : ""}`}>
       <Outcome block={prediction.outcome} onReadExplanation={onReadExplanation} />

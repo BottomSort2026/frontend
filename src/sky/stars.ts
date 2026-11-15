@@ -1,8 +1,8 @@
 // The sky's catalogue. Offsets are degrees from the centre of Crux (x: west is right,
 // y: south is down), taken from the stars' catalogue positions.
 
-export type SectionId = "mission" | "safety" | "library" | "lab";
-export type SectionPath = "/mission" | "/fire-safety" | "/library" | "/flame-lab";
+export type SectionId = "mission" | "investigations" | "library" | "lab";
+export type SectionPath = "/mission" | "/investigations" | "/library" | "/flame-lab";
 
 export interface StarDef {
   id: SectionId;
@@ -27,7 +27,7 @@ export interface PlainStar {
   mag: number;
 }
 
-/** In tab order: Mission, Fire safety, Library, Flame lab. */
+/** In tab order: Mission, Investigations, Library, Flame lab. */
 export const STARS: readonly StarDef[] = [
   {
     id: "mission",
@@ -41,9 +41,9 @@ export const STARS: readonly StarDef[] = [
     side: "right",
   },
   {
-    id: "safety",
-    path: "/fire-safety",
-    name: "Fire safety",
+    id: "investigations",
+    path: "/investigations",
+    name: "Investigations",
     greek: "β",
     star: "Mimosa",
     dx: -2.21,
@@ -86,7 +86,7 @@ export const PLAIN_STARS: readonly PlainStar[] = [
 /** The two bars of the cross. */
 export const LINES: readonly (readonly [SectionId, SectionId])[] = [
   ["lab", "mission"],
-  ["safety", "library"],
+  ["investigations", "library"],
 ];
 
 export function starById(id: SectionId): StarDef {

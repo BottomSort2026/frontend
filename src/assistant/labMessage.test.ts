@@ -34,15 +34,18 @@ const REFERENCE = {
 
 const PREDICTION: LabPredictResponse["prediction"] = {
   outcome: {
-    outcome: "extinction",
-    probabilities: { extinction: 0.587, no_extinction: 0.413 },
-    confidence: "medium",
-    in_tested_range: true,
+    prediction: {
+      label: "extinction",
+      probabilities: { extinction: 0.587, no_extinction: 0.413 },
+    },
+    support: { confidence: "medium", in_tested_range: true },
   },
   extinction: {
-    extinction_diameter_ratio: 0.445,
-    extinction_diameter_mm: 1.336,
-    fuel_burned_fraction: 0.912,
+    prediction: {
+      extinction_diameter_ratio: 0.445,
+      extinction_diameter_mm: 1.336,
+      fuel_burned_fraction: 0.912,
+    },
   },
 };
 
@@ -83,9 +86,11 @@ describe("prediction statement", () => {
     const line = predictionStatement({
       ...PREDICTION,
       outcome: {
-        outcome: "no_extinction",
-        probabilities: { extinction: 0.3, no_extinction: 0.7 },
-        in_tested_range: false,
+        prediction: {
+          label: "no_extinction",
+          probabilities: { extinction: 0.3, no_extinction: 0.7 },
+        },
+        support: { in_tested_range: false },
       },
     });
     expect(line).toBe(
@@ -94,7 +99,7 @@ describe("prediction statement", () => {
   });
 
   it("copes with a bare prediction", () => {
-    expect(predictionStatement({ outcome: { outcome: "extinction" } })).toBe(
+    expect(predictionStatement({ outcome: { prediction: { label: "extinction" } } })).toBe(
       "Predicted: the flame goes out on its own.",
     );
   });

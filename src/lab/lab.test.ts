@@ -13,6 +13,7 @@ import {
   sameInputs,
   selectorOf,
   sourceLine,
+  testConditions,
   supportSentence,
 } from "./lab";
 
@@ -180,7 +181,10 @@ function prediction(
   a: NearestTest[],
   b: NearestTest[],
 ): LabPredictResponse["prediction"] {
-  return { outcome: { outcome, nearest_tests: a }, extinction: { nearest_tests: b } };
+  return {
+    outcome: { prediction: { label: outcome }, support: { nearest_tests: a } },
+    extinction: { support: { nearest_tests: b } },
+  };
 }
 
 describe("closest real tests", () => {
@@ -214,7 +218,76 @@ describe("closest real tests", () => {
   });
 
   it("copes with missing lists", () => {
-    expect(nearestTests({ outcome: { outcome: "extinction" } })).toEqual([]);
+    expect(nearestTests({ outcome: { prediction: { label: "extinction" } } })).toEqual([]);
+  });
+});
+
+describe("starting values without defaults", () => {
+  // The inputs GET /lab/model-info really sends: no `default` anywhere.
+  const real: LabModelInfo = {
+    inputs: {
+      fuel: { type: "enum", values: ["heptane", "methanol"] },
+      pressure_atm: { type: "float", min: 0.69, max: 1.02, unit: "atm" },
+      o2: { type: "float", min: 0.12, max: 0.34, unit: "mole fraction" },
+      suppressant: { type: "enum", values: ["none", "co2", "he"] },
+      suppressant_fraction: {
+        type: "float",
+        min: 0,
+        max: 0.5,
+        unit: "mole fraction",
+        by_selector: {
+          none: { min: 0, max: 0 },
+          co2: { min: 0.05, max: 0.5 },
+          he: { min: 0.05, max: 0.45 },
+        },
+      },
+      droplet_d0_mm: { type: "float", min: 1.1, max: 4.67, unit: "mm" },
+    },
+  };
+
+  it("starts from air at about 1 atm, not from each minimum", () => {
+    expect(buildInputs(real, defaultValues(real))).toEqual({
+      fuel: "heptane",
+      pressure_atm: 1,
+      o2: 0.21,
+      suppressant: "none",
+      suppressant_fraction: 0,
+      droplet_d0_mm: 3,
+    });
+  });
+
+  it("keeps a starting value inside the model's own range", () => {
+    const narrow: LabModelInfo = {
+      inputs: { pressure_atm: { type: "float", min: 0.5, max: 0.8, unit: "atm" } },
+    };
+    expect(defaultValues(narrow).pressure_atm).toBe(0.8);
+  });
+});
+
+describe("a real test's conditions", () => {
+  const conditions = {
+    fuel: "methanol",
+    pressure_atm: 1.0125,
+    o2: 0.21,
+    co2: 0,
+    he: 0,
+    d0_mm: 2.78,
+  };
+
+  it("reads like the request, so the two can be compared", () => {
+    expect(testConditions({ conditions })).toBe(
+      "methanol · 1.01 atm · 21 % O₂ · no suppressant · D₀ 2.78 mm",
+    );
+  });
+
+  it("names the suppressant that was used", () => {
+    expect(testConditions({ conditions: { ...conditions, co2: 0.3 } })).toContain("30 % CO₂");
+    expect(testConditions({ conditions: { ...conditions, he: 0.05 } })).toContain("5 % helium");
+  });
+
+  it("leaves out what the test does not carry", () => {
+    expect(testConditions({})).toBe("");
+    expect(testConditions({ conditions: { fuel: "heptane", d0_mm: null } })).toBe("heptane");
   });
 });
 
@@ -227,24 +300,23 @@ describe("source line", () => {
   });
   const p: LabPredictResponse["prediction"] = {
     outcome: {
-      outcome: "extinction",
-      model_version: "flex-outcome-0.1",
-      training_source: source(251),
+      prediction: { label: "extinction" },
+      model: { model_version: "flex-outcome-0.2", training_source: source(251) },
     },
-    extinction: { model_version: "flex-extinction-0.2", training_source: source(156) },
+    extinction: { model: { model_version: "flex-extinction-0.2", training_source: source(156) } },
   };
 
   it("names both models and their training data, never an object or a hash", () => {
     const line = sourceLine(p);
     expect(line).toBe(
-      "flex-outcome-0.1 · flex-extinction-0.2 · trained on FLEX (PSI-69), 251 and 156 tests. Valid only within the conditions tested on the ISS.",
+      "flex-outcome-0.2 · flex-extinction-0.2 · trained on FLEX (PSI-69), 251 and 156 tests. Valid only within the conditions tested on the ISS.",
     );
     expect(line).not.toContain("[object");
     expect(line).not.toContain("abc123");
   });
 
   it("survives missing fields", () => {
-    expect(sourceLine({ outcome: { outcome: "extinction" } })).toBe(
+    expect(sourceLine({ outcome: { prediction: { label: "extinction" } } })).toBe(
       "Valid only within the conditions tested on the ISS.",
     );
   });

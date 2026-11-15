@@ -1,0 +1,399 @@
+/* The Investigations view: the report's ranking as an accordion, with every statement sourced. */
+
+/* The three pillars, each with the investigations that cover it. */
+.ff-pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-6);
+}
+.ff-pillar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line-strong);
+}
+.ff-pillar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ink-muted);
+}
+.ff-pillar__head svg {
+  width: 28px;
+  height: 28px;
+  color: var(--ink);
+}
+.ff-pillar__title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.12;
+  font-weight: 400;
+  color: var(--ink);
+}
+.ff-pillar__body {
+  font-size: 16px;
+  line-height: 26px;
+  color: var(--ink-muted);
+}
+.ff-pillar__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.ff-pillar__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.ff-inv-intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ff-inv-overview {
+  font-size: 16px;
+  line-height: 26px;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* References. [n] leads to a source of the open investigation; a name opens that investigation. */
+.ff-refs {
+  display: inline;
+  white-space: normal;
+}
+.ff-refs--inv {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  vertical-align: middle;
+}
+.ff-ref {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--flame-blue);
+  text-decoration: none;
+  padding: var(--space-1) 2px;
+  border-radius: var(--radius-sm);
+}
+.ff-ref--inv {
+  appearance: none;
+  cursor: pointer;
+  border: 1px solid var(--sky-600);
+  background: var(--sky-800);
+  border-radius: var(--radius-pill);
+  padding: 2px var(--space-2);
+  letter-spacing: 0.04em;
+}
+.ff-ref:focus-visible,
+.ff-inv__toggle:focus-visible,
+.ff-inv__link:focus-visible,
+.ff-sources a:focus-visible,
+.ff-sources li:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+@media (hover: hover) {
+  .ff-ref:hover {
+    text-decoration: underline;
+  }
+  .ff-ref--inv:hover {
+    text-decoration: none;
+    border-color: var(--line-strong);
+    background: var(--sky-700);
+  }
+}
+
+/* The ranking. Rows are separated by hairlines; only one panel is open at a time. */
+.ff-inv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--sky-600);
+}
+.ff-inv {
+  border-bottom: 1px solid var(--sky-600);
+  scroll-margin-top: var(--space-6);
+}
+.ff-inv--open {
+  border-bottom-color: var(--line-strong);
+}
+.ff-inv__heading {
+  margin: 0;
+  font: inherit;
+}
+.ff-inv__toggle {
+  appearance: none;
+  width: 100%;
+  min-height: 56px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto 16px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ff-inv__toggle:hover {
+    background: var(--sky-800);
+  }
+}
+.ff-inv__rank,
+.ff-inv__total,
+.ff-inv__habitat {
+  font-family: var(--font-mono);
+}
+.ff-inv__rank {
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+.ff-inv__name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ff-inv__acronym {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 28px;
+}
+.ff-inv__title {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ff-inv--open .ff-inv__title {
+  white-space: normal;
+}
+.ff-inv__tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+.ff-inv__numbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 56px;
+}
+.ff-inv__total {
+  font-size: 20px;
+  line-height: 24px;
+}
+.ff-inv__habitat {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.ff-inv__chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transform: rotate(-90deg);
+}
+.ff-inv--open .ff-inv__chevron {
+  transform: rotate(90deg);
+}
+@media (max-width: 719px) {
+  .ff-inv__toggle {
+    grid-template-columns: 36px minmax(0, 1fr) auto 16px;
+  }
+  .ff-inv__tags {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+  }
+}
+
+/* The open panel. */
+.ff-inv__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-1) var(--space-8);
+  max-width: 76ch;
+}
+.ff-inv__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ff-inv__text,
+.ff-inv__list,
+.ff-inv__dl dd,
+.ff-score__reason {
+  font-size: 15px;
+  line-height: 24px;
+  color: var(--ink-muted);
+  text-wrap: pretty;
+}
+.ff-inv__text {
+  color: var(--ink);
+}
+.ff-inv__readiness {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+.ff-inv__list {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ff-inv__dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ff-inv__dl dt {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.ff-inv__dl dd {
+  margin: 0;
+}
+.ff-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4) var(--space-6);
+}
+.ff-score {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ff-score__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ff-score__name {
+  font-weight: 500;
+  color: var(--ink);
+}
+.ff-score__weight,
+.ff-score__value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.ff-score__value {
+  margin-left: auto;
+  color: var(--ink);
+}
+.ff-score .ff-meter__bar {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--sky-700);
+  overflow: hidden;
+}
+.ff-score .ff-meter__bar i {
+  display: block;
+  height: 100%;
+  width: calc(var(--v) * 100%);
+  border-radius: var(--radius-pill);
+  background: var(--flame-blue);
+}
+.ff-sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ff-sources li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: var(--space-2);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ink-muted);
+  border-radius: var(--radius-sm);
+  scroll-margin: var(--space-8);
+}
+.ff-sources__n {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--flame-blue);
+}
+.ff-sources a,
+.ff-inv__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--flame-blue);
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.ff-inv__link {
+  align-self: flex-start;
+  min-height: 40px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.ff-sources a svg,
+.ff-inv__link svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+@media (hover: hover) {
+  .ff-sources a:hover,
+  .ff-inv__link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Hardware groups and gaps of the synthesis. */
+.ff-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+}
+.ff-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--sky-600);
+  border-radius: var(--radius-md);
+}
+.ff-group__title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.ff-group__part {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ff-gaps {
+  max-width: 76ch;
+}

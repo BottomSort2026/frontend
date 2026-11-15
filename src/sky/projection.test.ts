@@ -21,9 +21,9 @@ describe("sky layout", () => {
 
   it("puts Gacrux at the top of the cross and Acrux at the foot", () => {
     const { stars } = layoutSky(1280, 800);
-    expect(stars.lab.y).toBeLessThan(stars.safety.y);
+    expect(stars.lab.y).toBeLessThan(stars.investigations.y);
     expect(stars.mission.y).toBeGreaterThan(stars.library.y);
-    expect(stars.safety.x).toBeLessThan(stars.library.x);
+    expect(stars.investigations.x).toBeLessThan(stars.library.x);
   });
 
   it("stacks labels on narrow viewports", () => {
@@ -39,7 +39,7 @@ describe("sky layout", () => {
 describe("routes", () => {
   it("maps each path to its star", () => {
     expect(starForPath("/flame-lab")?.star).toBe("Gacrux");
-    expect(starForPath("/fire-safety/")?.star).toBe("Mimosa");
+    expect(starForPath("/investigations/")?.star).toBe("Mimosa");
     expect(starForPath("/")).toBeNull();
   });
 });

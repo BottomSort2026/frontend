@@ -73,20 +73,20 @@ const pct = (v: number) => `${Math.round(v * 100)} %`;
 /** One line from the `prediction` object: the verdict, its probability, and the droplet if it goes out. */
 export function predictionStatement(prediction: LabPredictResponse["prediction"]): string {
   const { outcome, extinction } = prediction;
-  const verdict = OUTCOME_VERDICT[outcome.outcome] ?? humanize(outcome.outcome).label;
-  const p = outcome.probabilities?.[outcome.outcome];
+  const { label, probabilities } = outcome.prediction;
+  const verdict = OUTCOME_VERDICT[label] ?? humanize(label).label;
+  const p = probabilities?.[label];
   let line = `Predicted: ${verdict.charAt(0).toLowerCase()}${verdict.slice(1)}`;
   if (typeof p === "number") line += ` (${pct(p)})`;
-  if (outcome.confidence) line += `, ${outcome.confidence} confidence`;
-  if (outcome.in_tested_range === false) line += ", outside the tested conditions";
-  if (outcome.outcome === "extinction" && extinction) {
+  if (outcome.support?.confidence) line += `, ${outcome.support.confidence} confidence`;
+  if (outcome.support?.in_tested_range === false) line += ", outside the tested conditions";
+  const droplet = extinction?.prediction;
+  if (label === "extinction" && droplet) {
     const bits: string[] = [];
-    if (typeof extinction.extinction_diameter_mm === "number")
-      bits.push(
-        `droplet diameter at extinction ${extinction.extinction_diameter_mm.toFixed(2)} mm`,
-      );
-    if (typeof extinction.fuel_burned_fraction === "number")
-      bits.push(`${pct(extinction.fuel_burned_fraction)} of the fuel burned first`);
+    if (typeof droplet.extinction_diameter_mm === "number")
+      bits.push(`droplet diameter at extinction ${droplet.extinction_diameter_mm.toFixed(2)} mm`);
+    if (typeof droplet.fuel_burned_fraction === "number")
+      bits.push(`${pct(droplet.fuel_burned_fraction)} of the fuel burned first`);
     if (bits.length) line += `; ${bits.join(", ")}`;
   }
   return `${line}.`;

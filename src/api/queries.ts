@@ -9,6 +9,12 @@ export const profilesQuery = queryOptions({
   staleTime: Infinity, // built offline, static for the life of the page
 });
 
+export const investigationsQuery = queryOptions({
+  queryKey: ["investigations"],
+  queryFn: ({ signal }) => api.investigations(signal),
+  staleTime: Infinity, // generated offline, static for the life of the page
+});
+
 export const modelInfoQuery = queryOptions({
   queryKey: ["lab", "model-info"],
   queryFn: ({ signal }) => api.labModelInfo(signal),

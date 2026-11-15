@@ -257,6 +257,12 @@
   margin-left: auto;
   color: var(--ink-muted);
 }
+/* The real test's own conditions, on their own line under its ids. */
+.ff-nearest__conditions {
+  flex-basis: 100%;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
 .ff-lab-link {
   display: inline-flex;
   align-items: center;

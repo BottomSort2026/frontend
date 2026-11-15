@@ -149,7 +149,7 @@ export function Predictor({ fixture }: { fixture?: SampleFixture }) {
   const status = running
     ? "Asking the models…"
     : shown && !stale
-      ? `Prediction ready. ${OUTCOME_VERDICT[shown.response.prediction.outcome.outcome] ?? ""}`
+      ? `Prediction ready. ${OUTCOME_VERDICT[shown.response.prediction.outcome.prediction.label] ?? ""}`
       : "";
 
   return (

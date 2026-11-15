@@ -2,8 +2,8 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite-plus";
 
-/** Paths the gateway routes to the services. `/mcp` carries the Flame Lab (docs/frontend_flame_lab.md §8). */
-const GATEWAY_PATHS = ["/profiles", "/chat", "/mcp"];
+/** Paths the gateway routes to the services. `/lab` is the Flame Lab (docs/frontend_flame_lab.md §8). */
+const GATEWAY_PATHS = ["/profiles", "/chat", "/lab"];
 
 export default defineConfig(({ mode }) => {
   // GATEWAY_URL is read from the environment, never hard-coded (e.g. http://localhost:8080).
@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
         ".agents",
         ".claude",
         "docs/ARCHITECTURE.md",
+        // Generated report (see src/investigations/report.ts): kept byte-identical to its source.
+        "src/data/investigations.json",
         "docs/frontend_flame_lab.md",
         "docs/prediction_flow.md",
       ],

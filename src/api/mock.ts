@@ -101,7 +101,7 @@ const PROFILES: ProfileList = {
 };
 
 // Flame Lab. Ranges are the rounded ones of prediction_flow.md §5.1; the real ones come from
-// GET /mcp/lab/model-info. Predictions are fixtures built from the model cards' reference query
+// GET /lab/model-info. Predictions are fixtures built from the model cards' reference query
 // `iss_like_air` (docs/frontend_flame_lab.md §8). The sample adapter returns a fixture whatever the
 // inputs are: it never pretends to depend on them, and the interface says so.
 const LAB_MODEL_INFO: LabModelInfo = {
@@ -125,7 +125,7 @@ const LAB_MODEL_INFO: LabModelInfo = {
     },
     droplet_d0_mm: { type: "float", min: 1.1, max: 4.7, unit: "mm", default: 3 },
   },
-  outputs: ["outcome", "extinction"],
+  outputs: ["label", "probabilities"],
 };
 
 /** The query the fixtures were computed for. */
@@ -145,36 +145,53 @@ const near = (n: number, ends: string[]): NearestTest[] =>
     testsheet_id: `FLEX-0N${n + i}`,
     cir_id: `CIR-0N${n + i}`,
     test_end,
+    conditions: {
+      fuel: "methanol",
+      pressure_atm: 1,
+      o2: 0.21,
+      co2: 0,
+      he: 0,
+      d0_mm: +(2.8 + i * 0.1).toFixed(2),
+    },
     distance: 0.2 + i * 0.1,
   }));
 
+// Each block as engine sends it: what the model predicts, its k-NN, and which model it is.
 const OUTCOME: OutcomeBlock = {
-  outcome: "extinction",
-  probabilities: { extinction: 0.587, no_extinction: 0.413 },
-  in_tested_range: true,
-  out_of_range_fields: [],
-  support_n: 10,
-  nearest_tests: near(1, ["extinction", "extinction", "disruption", "extinction", "completion"]),
-  confidence: "medium",
-  model_version: "flex-outcome-0.1",
-  training_source: { ...SOURCE, rows: 251 },
+  prediction: {
+    label: "extinction",
+    probabilities: { extinction: 0.587, no_extinction: 0.413 },
+  },
+  support: {
+    in_tested_range: true,
+    out_of_range_fields: [],
+    support_n: 10,
+    threshold: 0.83,
+    confidence: "medium",
+    nearest_tests: near(1, ["extinction", "extinction", "disruption", "extinction", "completion"]),
+  },
+  model: { model_version: "flex-outcome-0.2", training_source: { ...SOURCE, rows: 251 } },
 };
 
 const EXTINCTION: ExtinctionBlock = {
-  extinction_diameter_ratio: 0.445,
-  extinction_diameter_mm: 1.336,
-  fuel_burned_fraction: 0.912,
-  in_tested_range: true,
-  out_of_range_fields: [],
-  support_n: 11,
-  // Two of these are also the outcome model's neighbours: the Lab lists each test once.
-  nearest_tests: [
-    ...near(1, ["extinction", "extinction"]),
-    ...near(6, ["extinction", "extinction", "extinction"]),
-  ],
-  confidence: "high",
-  model_version: "flex-extinction-0.2",
-  training_source: { ...SOURCE, rows: 156 },
+  prediction: {
+    extinction_diameter_ratio: 0.445,
+    extinction_diameter_mm: 1.336,
+    fuel_burned_fraction: 0.912,
+  },
+  support: {
+    in_tested_range: true,
+    out_of_range_fields: [],
+    support_n: 11,
+    threshold: 1.016,
+    confidence: "high",
+    // Two of these are also the outcome model's neighbours: the Lab lists each test once.
+    nearest_tests: [
+      ...near(1, ["extinction", "extinction"]),
+      ...near(6, ["extinction", "extinction", "extinction"]),
+    ],
+  },
+  model: { model_version: "flex-extinction-0.2", training_source: { ...SOURCE, rows: 156 } },
 };
 
 const EXPLANATION =
@@ -186,7 +203,15 @@ const reference = (
 ): LabPredictResponse => ({
   prediction,
   explanation: EXPLANATION,
-  cited_tests: [{ testsheet_id: "FLEX-0N1", investigation_url: investigationUrl("PSI-69") }],
+  cited_tests: [
+    {
+      testsheet_id: "FLEX-0N1",
+      cir_id: "CIR-0N1",
+      test_end: "extinction",
+      label: '"FLEX-0N1_TestSheet". FLEX (PSI-69), folder Raw Data.',
+      investigation_url: investigationUrl("PSI-69"),
+    },
+  ],
   sample: { inputs: REFERENCE_INPUTS, reference: isReference },
 });
 
@@ -206,15 +231,20 @@ function fixture(name: SampleFixture | undefined): LabPredictResponse {
       return reference({
         outcome: {
           ...OUTCOME,
-          outcome: "no_extinction",
-          probabilities: { extinction: 0.318, no_extinction: 0.682 },
-          nearest_tests: near(1, [
-            "completion",
-            "disruption",
-            "completion",
-            "extinction",
-            "disruption",
-          ]),
+          prediction: {
+            label: "no_extinction",
+            probabilities: { extinction: 0.318, no_extinction: 0.682 },
+          },
+          support: {
+            ...OUTCOME.support,
+            nearest_tests: near(1, [
+              "completion",
+              "disruption",
+              "completion",
+              "extinction",
+              "disruption",
+            ]),
+          },
         },
         extinction: EXTINCTION,
       });
@@ -223,10 +253,13 @@ function fixture(name: SampleFixture | undefined): LabPredictResponse {
         outcome: OUTCOME,
         extinction: {
           ...EXTINCTION,
-          in_tested_range: false,
-          out_of_range_fields: ["o2"],
-          support_n: 0,
-          confidence: "low",
+          support: {
+            ...EXTINCTION.support,
+            in_tested_range: false,
+            out_of_range_fields: ["o2"],
+            support_n: 0,
+            confidence: "low",
+          },
         },
       });
     case "no_explanation":
@@ -235,12 +268,13 @@ function fixture(name: SampleFixture | undefined): LabPredictResponse {
         explanation: null,
       };
     case "invalid":
-      throw new ApiError(422, "POST /mcp/lab/predict failed with 422", {
+      throw new ApiError(422, "POST /lab/predict failed with 422", {
+        error: "invalid_inputs",
         detail: "Sample error: o2 + suppressant_fraction must be at most 1.",
       });
     case "down":
-      throw new ApiError(502, "POST /mcp/lab/predict failed with 502", {
-        error: "upstream_unreachable",
+      throw new ApiError(502, "POST /lab/predict failed with 502", {
+        error: "upstream_unavailable",
         detail: "Sample error: the mcp service is not reachable",
       });
     default:

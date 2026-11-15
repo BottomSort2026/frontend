@@ -5,6 +5,10 @@
 //   VITE_API_URL=/                same origin, behind the gateway (and through the dev proxy)
 //   VITE_API_URL=http://host:port another origin
 
+// The investigations report ships with the app as its own file: fetched only when the
+// Investigations view opens, from the app's origin, with or without a gateway.
+import investigationsUrl from "../data/investigations.json?url";
+import type { InvestigationsReport } from "../investigations/report";
 import { uiLanguage } from "../lib/language";
 import { ApiError } from "./errors";
 import * as mock from "./mock";
@@ -28,9 +32,9 @@ export { ApiError, errorDetail } from "./errors";
 /** True when a gateway is configured. Without one the app serves its built-in sample data. */
 export const hasBackend = RAW.length > 0;
 
-// The Flame Lab routes (docs/frontend_flame_lab.md §8). Proposed names: a rename is one line here.
-export const LAB_MODEL_INFO_PATH = "/mcp/lab/model-info";
-export const LAB_PREDICT_PATH = "/mcp/lab/predict";
+// The Flame Lab routes: the gateway sends them to the MCP under the same path.
+export const LAB_MODEL_INFO_PATH = "/lab/model-info";
+export const LAB_PREDICT_PATH = "/lab/predict";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
@@ -64,8 +68,9 @@ const post = (body: unknown, signal?: AbortSignal): RequestInit => ({
 });
 
 /**
- * The document does not fix model-info's envelope: the controls use the outcome model's inputs,
- * which may arrive at the top level or under `outcome`. Anything else is an error, not a guess.
+ * model-info sends the controls' `inputs` at the top level (and each model's own under `outcome`
+ * and `extinction`). The older envelope, inputs only under `outcome`, is still accepted. Anything
+ * else is an error, not a guess.
  */
 export function normalizeModelInfo(raw: unknown): LabModelInfo {
   const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
@@ -78,15 +83,30 @@ export function normalizeModelInfo(raw: unknown): LabModelInfo {
 }
 
 export const api = {
-  /** profiles.json may be a bare array or wrapped in { profiles }: its hosting is still OPEN. */
+  /**
+   * profiles.json may be a bare array or wrapped in { profiles }: its hosting is still open.
+   * While it is not built (the gateway answers 404), the built-in sample set is served, labelled
+   * as a sample.
+   */
   async profiles(signal?: AbortSignal): Promise<ProfileList> {
     if (!hasBackend) return mock.getProfiles();
-    const data = await requestOrMock<InvestigationProfile[] | { profiles: InvestigationProfile[] }>(
-      "/profiles",
-      () => mock.getProfiles(),
-      { signal },
-    );
-    return { profiles: Array.isArray(data) ? data : data.profiles, sample: false };
+    try {
+      const data = await request<InvestigationProfile[] | { profiles: InvestigationProfile[] }>(
+        "/profiles",
+        { signal },
+      );
+      return { profiles: Array.isArray(data) ? data : data.profiles, sample: false };
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return mock.getProfiles();
+      throw e;
+    }
+  },
+  /** The generated report behind the Investigations view. Not a gateway route: a file of the app. */
+  async investigations(signal?: AbortSignal): Promise<InvestigationsReport> {
+    const res = await fetch(investigationsUrl, { signal, headers: { Accept: "application/json" } });
+    if (!res.ok)
+      throw new ApiError(res.status, `GET investigations.json failed with ${res.status}`);
+    return (await res.json()) as InvestigationsReport;
   },
   async labModelInfo(signal?: AbortSignal): Promise<LabModelInfo> {
     if (!hasBackend) return mock.getLabModelInfo();

@@ -4,7 +4,7 @@ The full system (tokens, eleven components with live previews, motion guide) is 
 
 ## Principles
 
-1. **The sky is the navigation.** No navbar. Four stars of Crux are the four destinations: Acrux → Mission, Mimosa → Fire safety, Imai → Library, Gacrux → Flame lab. Everything else lives in the corners.
+1. **The sky is the navigation.** No navbar. Four stars of Crux are the four destinations: Acrux → Mission, Mimosa → Investigations, Imai → Library, Gacrux → Flame lab. Everything else lives in the corners.
 2. **Blue in free fall, amber for caution.** `flame-blue` means microgravity and is the primary accent. `ember` means caution, for example a request outside the tested conditions.
 3. **Say what is not measured.** Anything that is not PSI data carries a label: "Sample ranking", "Sample output". The Flame Lab says where its data comes from: "Microgravity (ISS) data only".
 4. **One long animation.** The trip to a star (900 ms) is the only movement over 420 ms.
@@ -39,7 +39,7 @@ The trip has one light, not a cut. It blooms out of the star in the star's colou
 
 ## Accessibility
 
-`ring-focus` on every interactive element via `:focus-visible`. Targets at least 40 px. Hover styles inside `@media (hover: hover)`. Stars are real buttons in a `<nav>`, in tab order Mission, Fire safety, Library, Flame lab. `Escape` closes the chat if open, otherwise returns to the sky. Focus goes to the section headline on arrival and back to the star on return.
+`ring-focus` on every interactive element via `:focus-visible`. Targets at least 40 px. Hover styles inside `@media (hover: hover)`. Stars are real buttons in a `<nav>`, in tab order Mission, Investigations, Library, Flame lab. `Escape` closes the chat if open, otherwise returns to the sky. Focus goes to the section headline on arrival and back to the star on return.
 
 ## The assistant
 

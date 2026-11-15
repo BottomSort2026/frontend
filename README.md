@@ -2,13 +2,13 @@
 
 The web dashboard for _Flame in Freefall_ (NASA Space Apps 2026, team BottomSort). The home screen is the night sky of the Valle del Elqui: each star of the Southern Cross is a section, and choosing one flies the camera into it.
 
-| Star                        | Route          | View in `ARCHITECTURE.md` | Backend                                                       |
-| --------------------------- | -------------- | ------------------------- | ------------------------------------------------------------- |
-| Acrux, "Mission"            | `/mission`     | Information               | none (static)                                                 |
-| Mimosa, "Fire safety"       | `/fire-safety` | Information               | none (static)                                                 |
-| Imai, "Library"             | `/library`     | Information               | `GET /profiles`                                               |
-| Gacrux, "Flame lab"         | `/flame-lab`   | Simulator                 | `GET /mcp/lab/model-info`, `POST /mcp/lab/predict` (proposed) |
-| the assistant, bottom right | (panel)        | Chatbot                   | `POST /chat`                                                  |
+| Star                        | Route             | View in `ARCHITECTURE.md` | Backend                                                 |
+| --------------------------- | ----------------- | ------------------------- | ------------------------------------------------------- |
+| Acrux, "Mission"            | `/mission`        | Information               | none (static)                                           |
+| Mimosa, "Investigations"    | `/investigations` | Information               | none: `src/data/investigations.json`, a file of the app |
+| Imai, "Library"             | `/library`        | Information               | `GET /profiles`                                         |
+| Gacrux, "Flame lab"         | `/flame-lab`      | Simulator                 | `GET /lab/model-info`, `POST /lab/predict`              |
+| the assistant, bottom right | (panel)           | Chatbot                   | `POST /chat`                                            |
 
 It runs with no backend: with `VITE_API_URL` empty, every call is answered from sample data, and the interface labels it as sample.
 
@@ -61,7 +61,8 @@ src/
   sections/     the shell every section shares (heading, staggered entrance)
   lab/          Predictor (inputs and Predict), LabResult (outputs), lab.ts (their logic), ParamSlider
   library/      InvestigationCard and ranking
-  safety/       SafetyPillar
+  investigations/  the report's types and helpers, the accordion panel, the reference markers
+  data/            investigations.json, the generated report (do not edit by hand)
   assistant/    AssistantProvider (one conversation for the app; the Lab adds its explanations), dock, chat panel, face, labMessage
   api/          types (the contract), client, queries, mock (sample data)
   ui/           Button, Tag, Readout, icons

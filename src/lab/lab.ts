@@ -66,14 +66,22 @@ export function rangeOf(info: LabModelInfo, input: FloatInput, values: LabInputs
 export const clamp = (v: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, v));
 
-/** The model's defaults, or the first value / the minimum when it gives none. */
+/**
+ * Where a control starts when model-info gives no `default` (the real one gives none): air at
+ * about 1 atm with a mid-size droplet, clamped into the model's own range. These are starting
+ * points only, never limits. Starting at each minimum would put the droplet outside the
+ * extinction model's tested sizes; starting at the midpoints falls between the two tested pressures.
+ */
+const START: Record<string, number> = { pressure_atm: 1, o2: 0.21, droplet_d0_mm: 3 };
+
+/** The model's defaults; without them, the starting points above, the first choice, or the minimum. */
 export function defaultValues(info: LabModelInfo): LabInputs {
   const values: LabInputs = {};
   for (const [key, input] of Object.entries(info.inputs))
     values[key] =
       input.type === "enum"
         ? (input.default ?? input.values[0] ?? "")
-        : (input.default ?? input.min);
+        : (input.default ?? clamp(START[key] ?? input.min, input.min, input.max));
   return normalizeValues(info, values);
 }
 
@@ -141,9 +149,9 @@ export function sameInputs(a: LabInputs | undefined, b: LabInputs | undefined): 
  * at most five. The extinction model's neighbours count only when its block is shown.
  */
 export function nearestTests(prediction: LabPredictResponse["prediction"]): NearestTest[] {
-  const lists = [prediction.outcome.nearest_tests ?? []];
-  if (prediction.outcome.outcome === "extinction" && prediction.extinction)
-    lists.push(prediction.extinction.nearest_tests ?? []);
+  const lists = [prediction.outcome.support?.nearest_tests ?? []];
+  if (prediction.outcome.prediction.label === "extinction" && prediction.extinction)
+    lists.push(prediction.extinction.support?.nearest_tests ?? []);
   const seen = new Set<string>();
   const out: NearestTest[] = [];
   for (const t of lists.flat()) {
@@ -158,10 +166,38 @@ export function nearestTests(prediction: LabPredictResponse["prediction"]): Near
   return out;
 }
 
+const num = (v: unknown): number | undefined =>
+  typeof v === "number" && Number.isFinite(v) ? v : undefined;
+const percent = (fraction: number): string => `${Math.round(fraction * 100)} %`;
+
+/**
+ * A real test's own conditions, to compare with the request:
+ * "methanol · 1.01 atm · 21 % O₂ · no suppressant · D₀ 2.78 mm". The names are the ones engine
+ * sends for every nearest test; whatever is missing is left out.
+ */
+export function testConditions(test: NearestTest): string {
+  const c = test.conditions;
+  if (!c) return "";
+  const parts: string[] = [];
+  if (typeof c.fuel === "string" && c.fuel) parts.push(c.fuel);
+  const pressure = num(c.pressure_atm);
+  if (pressure !== undefined) parts.push(`${pressure.toFixed(2)} atm`);
+  const o2 = num(c.o2);
+  if (o2 !== undefined) parts.push(`${percent(o2)} O₂`);
+  const co2 = num(c.co2);
+  const he = num(c.he);
+  if (co2 !== undefined && co2 > 0) parts.push(`${percent(co2)} CO₂`);
+  else if (he !== undefined && he > 0) parts.push(`${percent(he)} helium`);
+  else if (co2 !== undefined || he !== undefined) parts.push("no suppressant");
+  const d0 = num(c.d0_mm);
+  if (d0 !== undefined) parts.push(`D₀ ${d0.toFixed(2)} mm`);
+  return parts.join(" · ");
+}
+
 const ACRONYM: Record<string, string> = { "PSI-69": "FLEX" };
 
 /**
- * "flex-outcome-0.1 · flex-extinction-0.2 · trained on FLEX (PSI-69), 251 and 156 tests. …"
+ * "flex-outcome-0.2 · flex-extinction-0.2 · trained on FLEX (PSI-69), 251 and 156 tests. …"
  * Built from the training_source objects: never prints an object, never the sha256.
  */
 export function sourceLine(
@@ -172,11 +208,13 @@ export function sourceLine(
     return sample.reference
       ? "Sample output: the reference case of the model cards, not computed from your inputs. The models are not connected yet."
       : "Sample output: a hand-made variant of the reference case to show this state, not computed from your inputs. The models are not connected yet.";
-  const blocks = [prediction.outcome, prediction.extinction].filter((b) => b !== undefined);
-  const parts = blocks.map((b) => b.model_version).filter((v): v is string => !!v);
-  const accessions = [...new Set(blocks.map((b) => b.training_source?.accession).filter(Boolean))];
-  const rows = blocks
-    .map((b) => b.training_source?.rows)
+  const models = [prediction.outcome.model, prediction.extinction?.model].filter(
+    (m) => m !== undefined,
+  );
+  const parts = models.map((m) => m.model_version).filter((v): v is string => !!v);
+  const accessions = [...new Set(models.map((m) => m.training_source?.accession).filter(Boolean))];
+  const rows = models
+    .map((m) => m.training_source?.rows)
     .filter((r): r is number => typeof r === "number");
   if (accessions.length || rows.length) {
     const data = accessions.map((a) => (ACRONYM[a!] ? `${ACRONYM[a!]} (${a})` : a)).join(", ");

@@ -9,6 +9,15 @@ import { LINES, PLAIN_STARS, STARS, type SectionId } from "./stars";
 import { useTravel } from "./TravelContext";
 import "./sky.css";
 
+/** How much of the arrival light stays on as the glow behind a section. */
+const AMBIENT_LIGHT = 0.12;
+
+/** Smoothstep: eases both ends of a 0 to 1 ramp. */
+function smooth(t: number): number {
+  const x = clamp01(t);
+  return x * x * (3 - 2 * x);
+}
+
 /** The home screen: the Elqui night sky, with the four stars of Crux as the navigation. */
 export function SkyMap() {
   const { e, phase, current, go } = useTravel();
@@ -80,13 +89,27 @@ export function SkyMap() {
   const farY = useTransform(e, (v) => (reduce ? "0%" : `${v * 45}%`));
   const nearY = useTransform(e, (v) => (reduce ? "0%" : `${v * 90}%`));
   const domeY = useTransform(e, (v) => (reduce || !geo ? 0 : v * geo.height * 0.24 * 0.45));
-  // The burst is laid out at its full size and scaled down from there, so it stays sharp as it grows.
-  const burstRadius = focus && geo ? reach(focus, geo.width, geo.height) * 1.05 : 0;
-  const burstScale = useTransform(e, (v) => {
-    const s = clamp01((v - 0.42) / 0.58);
+  // The arrival light. One continuous light for the whole trip: it blooms out of the star,
+  // peaks as the sky disappears and then thins out into the section's ambient glow. Nothing is
+  // cut: the section enters over the settling light, and the return trip plays it backwards.
+  // The ranges are in units of `e`. The camera's easing spends 40 % of the trip between
+  // e = 0.86 and 1, which is what makes the settle long and gentle.
+  // It is laid out at full size and scaled down from there, so it stays sharp as it grows.
+  const lightRadius = focus && geo ? reach(focus, geo.width, geo.height) * 1.05 : 0;
+  const lightScale = useTransform(e, (v) => {
+    if (reduce) return 1;
+    const s = clamp01((v - 0.3) / 0.7);
     return Math.max(0.001, s * s);
   });
-  const burstOpacity = useTransform(e, (v) => (reduce ? 0 : clamp01(((v - 0.42) / 0.58) * 1.8)));
+  const lightOpacity = useTransform(e, (v) =>
+    reduce
+      ? AMBIENT_LIGHT * clamp01(v)
+      : smooth((v - 0.3) / 0.42) * (1 - (1 - AMBIENT_LIGHT) * smooth((v - 0.86) / 0.14)),
+  );
+  // The white-hot centre belongs to the flash only: it is gone by the time the section is read.
+  const coreOpacity = useTransform(e, (v) => (reduce ? 0 : 1 - smooth((v - 0.8) / 0.2)));
+  // The sky is covered before the section starts to enter (see ARRIVE_AT in TravelContext).
+  const coverOpacity = useTransform(e, (v) => smooth((v - 0.4) / 0.46));
 
   // Load choreography, once: stars arrive one by one, then the constellation draws itself.
   useEffect(() => {
@@ -242,21 +265,24 @@ export function SkyMap() {
         <span className="ff-eyebrow">Valle del Elqui, Chile · 30° S</span>
       </motion.div>
 
-      <div className="ff-burst-veil" data-hidden={away} aria-hidden="true">
+      <div className="ff-arrival" aria-hidden="true">
+        <motion.div className="ff-arrival__cover" style={{ opacity: coverOpacity }} />
         <motion.div
-          className="ff-burst"
+          className="ff-arrival__light"
           style={{
             left: focus?.x ?? 0,
             top: focus?.y ?? 0,
-            width: burstRadius * 2,
-            height: burstRadius * 2,
-            marginLeft: -burstRadius,
-            marginTop: -burstRadius,
-            scale: burstScale,
-            opacity: burstOpacity,
+            width: lightRadius * 2,
+            height: lightRadius * 2,
+            marginLeft: -lightRadius,
+            marginTop: -lightRadius,
+            scale: lightScale,
+            opacity: lightOpacity,
             "--tint": tok(current?.warm ? "--ember" : "--flame-blue"),
           }}
-        />
+        >
+          <motion.div className="ff-arrival__core" style={{ opacity: coreOpacity }} />
+        </motion.div>
       </div>
     </div>
   );

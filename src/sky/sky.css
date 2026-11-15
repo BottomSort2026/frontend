@@ -120,30 +120,52 @@
 .ff-hud--place .ff-eyebrow {
   color: var(--ink-muted);
 }
-/* The arrival burst: a disc in the star's colour that grows to cover the screen. */
-.ff-burst-veil {
+/* The arrival light: a cover that hides the sky, and one light in the star's colour that blooms,
+   then stays on at low strength as the glow behind the section. Both are driven by the trip. */
+.ff-arrival {
   position: absolute;
   inset: 0;
   z-index: calc(var(--z-stars) + 1);
+  overflow: hidden;
   pointer-events: none;
-  opacity: 1;
-  transition: opacity 200ms linear;
 }
-.ff-burst-veil[data-hidden="true"] {
-  opacity: 0;
-  transition: opacity var(--dur-slow) var(--ease-out);
-}
-.ff-burst {
+.ff-arrival__cover {
   position: absolute;
+  inset: 0;
+  background: var(--sky-900);
+}
+.ff-arrival__light {
+  --glow: var(--tint, var(--flame-blue));
+  position: absolute;
+  border-radius: 50%;
+  /* Several stops, so the light thins out like a glow instead of ending like a disc. */
+  background: radial-gradient(
+    circle,
+    var(--glow) 0%,
+    color-mix(in srgb, var(--glow) 62%, transparent) 14%,
+    color-mix(in srgb, var(--glow) 26%, transparent) 32%,
+    color-mix(in srgb, var(--glow) 7%, transparent) 50%,
+    transparent 64%
+  );
+  will-change: transform, opacity;
+}
+.ff-arrival__core {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   background: radial-gradient(
     circle,
     var(--flame-core) 0%,
-    var(--tint, var(--flame-blue)) 5%,
-    var(--sky-700) 20%,
-    var(--sky-900) 48%
+    color-mix(in srgb, var(--flame-core) 45%, transparent) 4%,
+    transparent 11%
   );
-  will-change: transform, opacity;
+}
+/* With reduced motion the trip is instant, so the light and the cover cross-fade instead. */
+@media (prefers-reduced-motion: reduce) {
+  .ff-arrival__cover,
+  .ff-arrival__light {
+    transition: opacity var(--dur-base) linear;
+  }
 }
 .ff-back {
   position: absolute;

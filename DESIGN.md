@@ -23,13 +23,15 @@ Buttons, cards and chat bubbles `radius-md`; the chat panel and the simulation v
 
 ## Motion
 
-| Token         | Value  | Use                                             |
-| ------------- | ------ | ----------------------------------------------- |
-| `dur-instant` | 120 ms | press feedback (`scale(0.97)`)                  |
-| `dur-fast`    | 180 ms | hover, focus, every exit                        |
-| `dur-base`    | 260 ms | chat open, messages, slider jumping to a preset |
-| `dur-slow`    | 420 ms | section content after arrival                   |
-| `dur-travel`  | 900 ms | the trip to a star; 700 ms back                 |
+| Token         | Value  | Use                                                           |
+| ------------- | ------ | ------------------------------------------------------------- |
+| `dur-instant` | 120 ms | press feedback (`scale(0.97)`)                                |
+| `dur-fast`    | 180 ms | hover, focus, every exit                                      |
+| `dur-base`    | 260 ms | chat open, messages, slider jumping to a preset               |
+| `dur-slow`    | 420 ms | section content after arrival                                 |
+| `dur-travel`  | 900 ms | the trip to a star; 800 ms back, same easing played backwards |
+
+The trip has one light, not a cut. It blooms out of the star in the star's colour, peaks as the sky disappears, and thins out into a faint glow that stays behind the section (12 % strength, where the star sits on screen). The section starts to enter while the light is still settling; on the way back the content fades while the same light swells and then falls into the star. A section has no background of its own.
 
 `ease-out` for anything entering or responding; `ease-in-out` for something already on screen moving from A to B; `ease-travel` for the camera. Never `ease-in` for an entrance, never `transition: all`. Animate `transform` and `opacity` only. Nothing animates on scroll, numbers do not count up, filtering the library does not animate. With `prefers-reduced-motion: reduce`: no zoom, no streaks, no twinkle, no slide; opacity fades stay.
 

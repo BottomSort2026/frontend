@@ -3,7 +3,10 @@
   inset: 0;
   z-index: var(--z-section);
   overflow-y: auto;
-  background: var(--sky-900);
+  /* No background of its own: the arrival cover and its light are the backdrop (see sky.css).
+     The mask lets content fade out under the floating "Back to sky" control. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 8px, black 60px);
+  mask-image: linear-gradient(to bottom, transparent 8px, black 60px);
   scrollbar-width: thin;
   scrollbar-color: var(--sky-600) transparent;
 }
@@ -117,18 +120,10 @@
   color: var(--ink);
 }
 
-/* Content fades out under the floating "Back to sky" control instead of colliding with it. */
-.ff-section__fade {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  height: 72px;
-  margin-bottom: -72px;
-  background: linear-gradient(var(--sky-900) 45%, transparent);
-  pointer-events: none;
-}
-
 /* The not-found page sits over the whole sky, wordmark included. */
 .ff-section--over {
   z-index: calc(var(--z-hud) + 1);
+  background: var(--sky-900);
+  -webkit-mask-image: none;
+  mask-image: none;
 }

@@ -65,7 +65,6 @@ export function Section({ id, title, lead, children }: SectionProps) {
       initial="hidden"
       animate={phase === "section" ? "shown" : "hidden"}
     >
-      <div className="ff-section__fade" aria-hidden="true" />
       <article className={`ff-sec${star.warm ? " ff-sec--warm" : ""}`}>
         <motion.header className="ff-sec__head" variants={block}>
           <p className="ff-eyebrow ff-sec__eyebrow">

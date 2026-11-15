@@ -1,0 +1,372 @@
+--- a/DESIGN.md
++++ b/DESIGN.md
+@@ -23,13 +23,15 @@
+ 
+ ## Motion
+ 
+-| Token         | Value  | Use                                             |
+-| ------------- | ------ | ----------------------------------------------- |
+-| `dur-instant` | 120 ms | press feedback (`scale(0.97)`)                  |
+-| `dur-fast`    | 180 ms | hover, focus, every exit                        |
+-| `dur-base`    | 260 ms | chat open, messages, slider jumping to a preset |
+-| `dur-slow`    | 420 ms | section content after arrival                   |
+-| `dur-travel`  | 900 ms | the trip to a star; 700 ms back                 |
++| Token         | Value  | Use                                                           |
++| ------------- | ------ | ------------------------------------------------------------- |
++| `dur-instant` | 120 ms | press feedback (`scale(0.97)`)                                |
++| `dur-fast`    | 180 ms | hover, focus, every exit                                      |
++| `dur-base`    | 260 ms | chat open, messages, slider jumping to a preset               |
++| `dur-slow`    | 420 ms | section content after arrival                                 |
++| `dur-travel`  | 900 ms | the trip to a star; 800 ms back, same easing played backwards |
++
++The trip has one light, not a cut. It blooms out of the star in the star's colour, peaks as the sky disappears, and thins out into a faint glow that stays behind the section (12 % strength, where the star sits on screen). The section starts to enter while the light is still settling; on the way back the content fades while the same light swells and then falls into the star. A section has no background of its own.
+ 
+ `ease-out` for anything entering or responding; `ease-in-out` for something already on screen moving from A to B; `ease-travel` for the camera. Never `ease-in` for an entrance, never `transition: all`. Animate `transform` and `opacity` only. Nothing animates on scroll, numbers do not count up, filtering the library does not animate. With `prefers-reduced-motion: reduce`: no zoom, no streaks, no twinkle, no slide; opacity fades stay.
+ 
+--- a/src/lib/motion.ts
++++ b/src/lib/motion.ts
+@@ -12,21 +12,27 @@
+   out: Bezier;
+   inOut: Bezier;
+   travelEase: Bezier;
++  /** `travelEase` played backwards, so the return trip mirrors the trip out. */
++  travelBackEase: Bezier;
+ }
+ 
+ let cached: MotionTokens | null = null;
+ 
+ export function motionTokens(): MotionTokens {
+-  cached ??= {
+-    instant: dur("--dur-instant", 120),
+-    fast: dur("--dur-fast", 180),
+-    base: dur("--dur-base", 260),
+-    slow: dur("--dur-slow", 420),
+-    travel: dur("--dur-travel", 900),
+-    travelBack: 0.7,
+-    out: ease("--ease-out", [0.23, 1, 0.32, 1]),
+-    inOut: ease("--ease-in-out", [0.77, 0, 0.175, 1]),
+-    travelEase: ease("--ease-travel", [0.65, 0, 0.2, 1]),
+-  };
++  if (!cached) {
++    const travelEase = ease("--ease-travel", [0.65, 0, 0.2, 1]);
++    cached = {
++      instant: dur("--dur-instant", 120),
++      fast: dur("--dur-fast", 180),
++      base: dur("--dur-base", 260),
++      slow: dur("--dur-slow", 420),
++      travel: dur("--dur-travel", 900),
++      travelBack: 0.8,
++      out: ease("--ease-out", [0.23, 1, 0.32, 1]),
++      inOut: ease("--ease-in-out", [0.77, 0, 0.175, 1]),
++      travelEase,
++      travelBackEase: [1 - travelEase[2], 1 - travelEase[3], 1 - travelEase[0], 1 - travelEase[1]],
++    };
++  }
+   return cached;
+ }
+--- a/src/sections/Section.tsx
++++ b/src/sections/Section.tsx
+@@ -65,7 +65,6 @@
+       initial="hidden"
+       animate={phase === "section" ? "shown" : "hidden"}
+     >
+-      <div className="ff-section__fade" aria-hidden="true" />
+       <article className={`ff-sec${star.warm ? " ff-sec--warm" : ""}`}>
+         <motion.header className="ff-sec__head" variants={block}>
+           <p className="ff-eyebrow ff-sec__eyebrow">
+--- a/src/sections/section.css
++++ b/src/sections/section.css
+@@ -3,7 +3,10 @@
+   inset: 0;
+   z-index: var(--z-section);
+   overflow-y: auto;
+-  background: var(--sky-900);
++  /* No background of its own: the arrival cover and its light are the backdrop (see sky.css).
++     The mask lets content fade out under the floating "Back to sky" control. */
++  -webkit-mask-image: linear-gradient(to bottom, transparent 8px, black 60px);
++  mask-image: linear-gradient(to bottom, transparent 8px, black 60px);
+   scrollbar-width: thin;
+   scrollbar-color: var(--sky-600) transparent;
+ }
+@@ -117,18 +120,10 @@
+   color: var(--ink);
+ }
+ 
+-/* Content fades out under the floating "Back to sky" control instead of colliding with it. */
+-.ff-section__fade {
+-  position: sticky;
+-  top: 0;
+-  z-index: 1;
+-  height: 72px;
+-  margin-bottom: -72px;
+-  background: linear-gradient(var(--sky-900) 45%, transparent);
+-  pointer-events: none;
+-}
+-
+ /* The not-found page sits over the whole sky, wordmark included. */
+ .ff-section--over {
+   z-index: calc(var(--z-hud) + 1);
++  background: var(--sky-900);
++  -webkit-mask-image: none;
++  mask-image: none;
+ }
+--- a/src/sky/SkyMap.tsx
++++ b/src/sky/SkyMap.tsx
+@@ -9,6 +9,15 @@
+ import { useTravel } from "./TravelContext";
+ import "./sky.css";
+ 
++/** How much of the arrival light stays on as the glow behind a section. */
++const AMBIENT_LIGHT = 0.12;
++
++/** Smoothstep: eases both ends of a 0 to 1 ramp. */
++function smooth(t: number): number {
++  const x = clamp01(t);
++  return x * x * (3 - 2 * x);
++}
++
+ /** The home screen: the Elqui night sky, with the four stars of Crux as the navigation. */
+ export function SkyMap() {
+   const { e, phase, current, go } = useTravel();
+@@ -80,13 +89,27 @@
+   const farY = useTransform(e, (v) => (reduce ? "0%" : `${v * 45}%`));
+   const nearY = useTransform(e, (v) => (reduce ? "0%" : `${v * 90}%`));
+   const domeY = useTransform(e, (v) => (reduce || !geo ? 0 : v * geo.height * 0.24 * 0.45));
+-  // The burst is laid out at its full size and scaled down from there, so it stays sharp as it grows.
+-  const burstRadius = focus && geo ? reach(focus, geo.width, geo.height) * 1.05 : 0;
+-  const burstScale = useTransform(e, (v) => {
+-    const s = clamp01((v - 0.42) / 0.58);
++  // The arrival light. One continuous light for the whole trip: it blooms out of the star,
++  // peaks as the sky disappears and then thins out into the section's ambient glow. Nothing is
++  // cut: the section enters over the settling light, and the return trip plays it backwards.
++  // The ranges are in units of `e`. The camera's easing spends 40 % of the trip between
++  // e = 0.86 and 1, which is what makes the settle long and gentle.
++  // It is laid out at full size and scaled down from there, so it stays sharp as it grows.
++  const lightRadius = focus && geo ? reach(focus, geo.width, geo.height) * 1.05 : 0;
++  const lightScale = useTransform(e, (v) => {
++    if (reduce) return 1;
++    const s = clamp01((v - 0.3) / 0.7);
+     return Math.max(0.001, s * s);
+   });
+-  const burstOpacity = useTransform(e, (v) => (reduce ? 0 : clamp01(((v - 0.42) / 0.58) * 1.8)));
++  const lightOpacity = useTransform(e, (v) =>
++    reduce
++      ? AMBIENT_LIGHT * clamp01(v)
++      : smooth((v - 0.3) / 0.42) * (1 - (1 - AMBIENT_LIGHT) * smooth((v - 0.86) / 0.14)),
++  );
++  // The white-hot centre belongs to the flash only: it is gone by the time the section is read.
++  const coreOpacity = useTransform(e, (v) => (reduce ? 0 : 1 - smooth((v - 0.8) / 0.2)));
++  // The sky is covered before the section starts to enter (see ARRIVE_AT in TravelContext).
++  const coverOpacity = useTransform(e, (v) => smooth((v - 0.4) / 0.46));
+ 
+   // Load choreography, once: stars arrive one by one, then the constellation draws itself.
+   useEffect(() => {
+@@ -241,21 +264,24 @@
+         <span className="ff-eyebrow">Valle del Elqui, Chile · 30° S</span>
+       </motion.div>
+ 
+-      <div className="ff-burst-veil" data-hidden={away} aria-hidden="true">
++      <div className="ff-arrival" aria-hidden="true">
++        <motion.div className="ff-arrival__cover" style={{ opacity: coverOpacity }} />
+         <motion.div
+-          className="ff-burst"
++          className="ff-arrival__light"
+           style={{
+             left: focus?.x ?? 0,
+             top: focus?.y ?? 0,
+-            width: burstRadius * 2,
+-            height: burstRadius * 2,
+-            marginLeft: -burstRadius,
+-            marginTop: -burstRadius,
+-            scale: burstScale,
+-            opacity: burstOpacity,
++            width: lightRadius * 2,
++            height: lightRadius * 2,
++            marginLeft: -lightRadius,
++            marginTop: -lightRadius,
++            scale: lightScale,
++            opacity: lightOpacity,
+             "--tint": tok(current?.warm ? "--ember" : "--flame-blue"),
+           }}
+-        />
++        >
++          <motion.div className="ff-arrival__core" style={{ opacity: coreOpacity }} />
++        </motion.div>
+       </div>
+     </div>
+   );
+--- a/src/sky/TravelContext.tsx
++++ b/src/sky/TravelContext.tsx
+@@ -1,4 +1,4 @@
+-import { useNavigate, useRouterState } from "@tanstack/react-router";
++import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
+ import {
+   animate,
+   useMotionValue,
+@@ -24,6 +24,14 @@
+ // star) drives every layer, so a trip can be reversed at any moment. The URL is the source of
+ // truth for where you are; this context only adds the animation between places.
+ 
++/**
++ * The section starts to enter here, while the light is still settling. Waiting for the trip to
++ * finish would leave a still frame: the camera's easing spends its last third barely moving
++ * (e = 0.93 is reached at 70 % of the trip).
++ * The sky is fully covered well before this point (see coverOpacity in SkyMap).
++ */
++const ARRIVE_AT = 0.93;
++
+ /** sky: at rest. in: flying to a star. section: arrived. out: flying back. */
+ export type TravelPhase = "sky" | "in" | "section" | "out";
+ 
+@@ -49,6 +57,7 @@
+ export function TravelProvider({ children }: { children: ReactNode }) {
+   const pathname = useRouterState({ select: (s) => s.location.pathname });
+   const navigate = useNavigate();
++  const router = useRouter();
+   const reduce = useReducedMotion() ?? false;
+   const landed = starForPath(pathname);
+ 
+@@ -59,6 +68,7 @@
+   const phaseRef = useRef<TravelPhase>(phase);
+   const anim = useRef<AnimationPlaybackControls | null>(null);
+   const timer = useRef(0);
++  const unwatch = useRef<(() => void) | null>(null);
+ 
+   const setPhase = useCallback((next: TravelPhase) => {
+     phaseRef.current = next;
+@@ -85,16 +95,28 @@
+       const t = motionTokens();
+       setCurrent(star);
+       setPhase("in");
+-      run(1, t.travel, t.travelEase, () => {
++      // The section's code and data load during the flight, so it is ready on arrival.
++      void router.preloadRoute({ to: star.path });
++      const arrive = () => {
++        unwatch.current?.();
++        unwatch.current = null;
++        if (phaseRef.current !== "in") return;
+         setPhase("section");
+         void navigate({ to: star.path });
++      };
++      unwatch.current?.();
++      unwatch.current = e.on("change", (v) => {
++        if (v >= ARRIVE_AT) arrive();
+       });
++      run(1, t.travel, t.travelEase, arrive);
+     },
+-    [navigate, run, setPhase],
++    [e, navigate, router, run, setPhase],
+   );
+ 
+   const leave = useCallback(() => {
+     const t = motionTokens();
++    unwatch.current?.();
++    unwatch.current = null;
+     if (phaseRef.current === "in") {
+       // Escape mid-flight: turn around from where we are.
+       setPhase("out");
+@@ -102,15 +124,12 @@
+       return;
+     }
+     if (phaseRef.current !== "section") return;
+-    setPhase("out"); // the section fades first, then the camera pulls back
++    setPhase("out");
+     window.clearTimeout(timer.current);
+-    timer.current = window.setTimeout(
+-      () => {
+-        void navigate({ to: "/" });
+-        run(0, t.travelBack, t.out, () => setPhase("sky"));
+-      },
+-      reduce ? 0 : 200,
+-    );
++    // The trip out, played backwards: it starts with the long settle, so the content fades out
++    // while the light swells, well before the sky shows through. The two overlap, not queue.
++    run(0, t.travelBack, t.travelBackEase, () => setPhase("sky"));
++    timer.current = window.setTimeout(() => void navigate({ to: "/" }), reduce ? 0 : 200);
+   }, [navigate, reduce, run, setPhase]);
+ 
+   const jump = useCallback(
+@@ -134,13 +153,14 @@
+       }
+     } else if (phaseRef.current === "section") {
+       setPhase("out");
+-      run(0, motionTokens().travelBack, motionTokens().out, () => setPhase("sky"));
++      run(0, motionTokens().travelBack, motionTokens().travelBackEase, () => setPhase("sky"));
+     }
+   }, [pathname, e, run, setPhase]);
+ 
+   useEffect(
+     () => () => {
+       window.clearTimeout(timer.current);
++      unwatch.current?.();
+       anim.current?.stop();
+     },
+     [],
+--- a/src/sky/sky.css
++++ b/src/sky/sky.css
+@@ -120,31 +120,53 @@
+ .ff-hud--place .ff-eyebrow {
+   color: var(--ink-muted);
+ }
+-/* The arrival burst: a disc in the star's colour that grows to cover the screen. */
+-.ff-burst-veil {
++/* The arrival light: a cover that hides the sky, and one light in the star's colour that blooms,
++   then stays on at low strength as the glow behind the section. Both are driven by the trip. */
++.ff-arrival {
+   position: absolute;
+   inset: 0;
+   z-index: calc(var(--z-stars) + 1);
++  overflow: hidden;
+   pointer-events: none;
+-  opacity: 1;
+-  transition: opacity 200ms linear;
+ }
+-.ff-burst-veil[data-hidden="true"] {
+-  opacity: 0;
+-  transition: opacity var(--dur-slow) var(--ease-out);
++.ff-arrival__cover {
++  position: absolute;
++  inset: 0;
++  background: var(--sky-900);
+ }
+-.ff-burst {
++.ff-arrival__light {
++  --glow: var(--tint, var(--flame-blue));
+   position: absolute;
+   border-radius: 50%;
++  /* Several stops, so the light thins out like a glow instead of ending like a disc. */
+   background: radial-gradient(
+     circle,
+-    var(--flame-core) 0%,
+-    var(--tint, var(--flame-blue)) 5%,
+-    var(--sky-700) 20%,
+-    var(--sky-900) 48%
++    var(--glow) 0%,
++    color-mix(in srgb, var(--glow) 62%, transparent) 14%,
++    color-mix(in srgb, var(--glow) 26%, transparent) 32%,
++    color-mix(in srgb, var(--glow) 7%, transparent) 50%,
++    transparent 64%
+   );
+   will-change: transform, opacity;
+ }
++.ff-arrival__core {
++  position: absolute;
++  inset: 0;
++  border-radius: 50%;
++  background: radial-gradient(
++    circle,
++    var(--flame-core) 0%,
++    color-mix(in srgb, var(--flame-core) 45%, transparent) 4%,
++    transparent 11%
++  );
++}
++/* With reduced motion the trip is instant, so the light and the cover cross-fade instead. */
++@media (prefers-reduced-motion: reduce) {
++  .ff-arrival__cover,
++  .ff-arrival__light {
++    transition: opacity var(--dur-base) linear;
++  }
++}
+ .ff-back {
+   position: absolute;
+   left: var(--space-4);
